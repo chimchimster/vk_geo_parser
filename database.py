@@ -32,8 +32,12 @@ def throw_params_db(host: Optional[str], user: Optional[str], password: Optional
 
 
 class MySQLDataBase:
+    """ Base class for each unique database connection. """
+
     def __init__(self, db_name: Optional[str]) -> None:
         self._db_name = db_name
 
+    def get_locations(self):
+        ...
 
 
