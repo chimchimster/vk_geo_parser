@@ -35,11 +35,13 @@ class ResponseAPI:
         return wrapper
 
 
-@ResponseAPI(('52.954615084310824', '63.08342735066121'), 100, 800, 'cb39c694cb39c694cb39c6947ac82a4521ccb39cb39c694af0d21b9ff056d21f912baa2')
+resAPI = ResponseAPI(('52.954615084310824', '63.08342735066121'), 100, 800, 'cb39c694cb39c694cb39c6947ac82a4521ccb39cb39c694af0d21b9ff056d21f912baa2')
+
+
+@resAPI
 async def func(*args, **kwargs):
     x = kwargs.pop('response')
     print(x)
-    await asyncio.sleep(1)
 
 
 async def main():
