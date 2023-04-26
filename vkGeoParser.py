@@ -19,8 +19,8 @@ class ResponseAPI:
     radius: int
     token: str
 
-    async def __call__(self, func):
-        async def wrapper(*args, **kwargs):
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
             response = requests.post(f'https://api.vk.com/method/photos.search?lat={self.coordinates[0]}&'
                           f'long={self.coordinates[1]}&count={self.publications}&'
                           f'v=5.131&access_token={self.token}&radius={self.radius}')
@@ -39,10 +39,12 @@ class ResponseAPI:
 async def func(*args, **kwargs):
     x = kwargs.pop('response')
     print(x)
-    await x
+    await asyncio.sleep(1)
 
 
 async def main():
+    await func()
+    await func()
     await func()
 
 
