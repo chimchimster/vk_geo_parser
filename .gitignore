@@ -1,2 +1,2 @@
 db_conf.py
-*.env
+.env
