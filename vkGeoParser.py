@@ -3,8 +3,53 @@ from datetime import datetime
 from copy import deepcopy
 import requests
 from typing import NewType
+from dataclasses import dataclass
+import asyncio
 
+from functools import wraps
 response_js = NewType('response_js', json)
+
+
+@dataclass
+class ResponseAPI:
+    """ Represents vk.ru API handler. """
+
+    coordinates: tuple
+    publications: int
+    radius: int
+    token: str
+
+    async def __call__(self, func):
+        async def wrapper(*args, **kwargs):
+            response = requests.post(f'https://api.vk.com/method/photos.search?lat={self.coordinates[0]}&'
+                          f'long={self.coordinates[1]}&count={self.publications}&'
+                          f'v=5.131&access_token={self.token}&radius={self.radius}')
+
+            # Converting response to JSON data
+            response_json = json.loads(response.text)
+
+            result = func(*args, response=response_json, **kwargs)
+
+            return result
+
+        return wrapper
+
+
+@ResponseAPI(('52.954615084310824', '63.08342735066121'), 100, 800, 'cb39c694cb39c694cb39c6947ac82a4521ccb39cb39c694af0d21b9ff056d21f912baa2')
+async def func(*args, **kwargs):
+    x = kwargs.pop('response')
+    print(x)
+    await x
+
+
+async def main():
+    await func()
+
+
+asyncio.run(main())
+
+
+
 
 class LocationParser:
     """ Class which parses data from vk.ru via API. """
@@ -39,8 +84,6 @@ class LocationParser:
 
             if 'post_id' in data:
                 collection.append(str(data['owner_id']) + '_' + str(data['post_id']))
-            else:
-                collection.append(str(data['owner_id']) + '_' + str(data['id']))
 
         return collection
 
@@ -106,6 +149,12 @@ class LocationParser:
                     except:
                         pass
 
+                post_id = ''
+                try:
+                    post_id = data['post_id']
+                except:
+                    pass
+
                 # In DB from_type
                 from_type = 6
 
@@ -137,6 +186,7 @@ class LocationParser:
                     sentiment,
                     _type,
                     sphinx_status,
+                    post_id,
                 ))
 
             self.collection = collection
@@ -159,13 +209,13 @@ class LocationParser:
             print(data)
 
 
-l = LocationParser('Рудный',
-                   '',
-                   ('55.19319090327282', '61.36051174894654'),
-                   200)
-# print(l.generate_slugs())
-
-l.form_collection()
+# l = LocationParser('Рудный',
+#                    'cb39c694cb39c694cb39c6947ac82a4521ccb39cb39c694af0d21b9ff056d21f912baa2',
+#                    ('52.954615084310824', '63.08342735066121'),
+#                    200)
+# # print(l.generate_slugs())
+#
+# l.form_collection()
 # l.update_text_field_on_valid()
-for tp in l.collection:
-    print(tp, end='\n')
+# for tp in l.collection:
+#     print(tp, end='\n')
