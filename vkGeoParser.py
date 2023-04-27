@@ -1,7 +1,17 @@
-import os
-from dotenv import load_dotenv
-from datetime import datetime
-from copy import deepcopy
-from responses.response_api import ResponseAPI
-from parser.parser import ParseData
 import asyncio
+
+from parser.parser import Query1, Query2, Query3
+
+
+
+
+
+
+async def main():
+    await asyncio.gather(
+        Query1.fill_collection(),
+        Query2.fill_collection(),
+        Query3.fill_collection(),
+    )
+
+asyncio.run(main())
