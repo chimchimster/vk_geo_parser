@@ -1,14 +1,13 @@
-from typing import Optional, Callable, Tuple, List
 from mysql.connector import Connect, Error
 
 
-def throw_params_db(host: Optional[str], user: Optional[str], password: Optional[str]) -> Callable:
+def throw_params_db(host: str, user: str, password: str) -> callable:
     """ Function which allows throwing parameters to connect database. """
 
-    def connect_db(func: Callable) -> Callable:
+    def connect_db(func: callable) -> callable:
         """ Function which allows placing specified function into inner scope. """
 
-        def wraps(*args: Tuple[str], **kwargs: Tuple[str]) -> List | Tuple | None:
+        def wraps(*args: tuple[str], **kwargs: tuple[str]) -> list | tuple | None:
             """ Function decorator which allows the operations in database. """
 
             connection = Connect(
@@ -34,7 +33,7 @@ def throw_params_db(host: Optional[str], user: Optional[str], password: Optional
 class MySQLDataBase:
     """ Base class for each unique database connection. """
 
-    def __init__(self, db_name: Optional[str]) -> None:
+    def __init__(self, db_name: str) -> None:
         self._db_name = db_name
 
     def get_locations(self):
