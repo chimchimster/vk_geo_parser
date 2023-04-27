@@ -1,8 +1,17 @@
+import asyncio
 import os
 from copy import deepcopy
 from datetime import datetime
 from dotenv import load_dotenv
+
 from vk_geo_parser.responses.response_api import ResponseAPI
+
+load_dotenv()
+vk_token = os.environ.get('VK_TOKEN')
+
+query1 = ResponseAPI(('55.733647398995075', '37.61603658440511'), 100, 6000, vk_token)
+query2 = ResponseAPI(('55.168822388426136', '61.4167578224923'), 100, 6000, vk_token)
+query3 = ResponseAPI(('21.15839201715473', '79.05503789744886'), 100, 6000, vk_token)
 
 
 class ParseData:
@@ -104,21 +113,33 @@ class ParseData:
                     sphinx_status,
                     post_id,
                 ))
-
+        print(collection)
         return collection
 
 
-load_dotenv()
-vk_token = os.environ.get('VK_TOKEN')
-
-query1 = ResponseAPI(('55.733647398995075', '37.61603658440511'), 100, 6000, vk_token)
-
-
 class Query1(ParseData):
-
     @query1
-    async def fill_collection(**kwargs):
-        return super().fill_collection(**kwargs)
+    async def fill_collection(*args, **kwargs):
+        await super(Query1, Query1).fill_collection(*args, **kwargs)
 
-q = Query1()
-print(q.fill_collection())
+
+class Query2(ParseData):
+    @query2
+    async def fill_collection(*args, **kwargs):
+        await super(Query2, Query2).fill_collection(*args, **kwargs)
+
+
+class Query3(ParseData):
+    @query3
+    async def fill_collection(*args, **kwargs):
+        await super(Query3, Query3).fill_collection(*args, **kwargs)
+
+
+async def main():
+    await asyncio.gather(
+        Query1.fill_collection(),
+        Query2.fill_collection(),
+        Query3.fill_collection(),
+    )
+
+asyncio.run(main())
