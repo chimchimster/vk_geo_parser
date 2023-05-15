@@ -3,10 +3,6 @@ import asyncio
 from parser.parser import Query1, Query2, Query3
 
 
-
-
-
-
 async def main():
     await asyncio.gather(
         Query1.fill_collection(),
