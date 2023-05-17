@@ -19,8 +19,7 @@ query3 = ResponseAPI(lst[2], 100, 6000, vk_token)
 class ParseData:
     """ Class which represents main parser. """
 
-    async def fill_collection(*args, **kwargs):
-
+    def fill_collection(*args, **kwargs):
         # Retrieving response from kwargs
         response_json = kwargs.pop('response')
 
@@ -120,21 +119,5 @@ class ParseData:
         return collection
 
 
-class Query1(ParseData):
-    @query1
-    async def fill_collection(*args, **kwargs):
-        return await super(Query1, Query1).fill_collection(*args, **kwargs)
-
-
-class Query2(ParseData):
-    @query2
-    async def fill_collection(*args, **kwargs):
-        return await super(Query2, Query2).fill_collection(*args, **kwargs)
-
-
-class Query3(ParseData):
-    @query3
-    async def fill_collection(*args, **kwargs):
-        return await super(Query3, Query3).fill_collection(*args, **kwargs)
-
+x = ParseData()
 
