@@ -113,7 +113,7 @@ class Post:
                 try:
                     await temp_db.insert_res_id('resource_social_ids', _data['owner_id'])
 
-                    return temp_db.get_res_id('resource_social_ids', _data['owner_id'])
+                    return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
                 except Exception as e:
                     print(e)
             else:
@@ -125,7 +125,7 @@ class Post:
     @check_if_res_id_already_in_db
     async def get_res_id(_data):
 
-        return temp_db.get_res_id('resource_social_ids', _data['owner_id'])
+        return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
 
 
     @staticmethod
@@ -142,8 +142,3 @@ class Post:
             return owner_id_copy[1:]
 
         return owner_id_copy
-
-
-
-
-
