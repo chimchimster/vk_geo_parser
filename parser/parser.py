@@ -31,7 +31,7 @@ class ParseData:
         for data in response_json['response']['items']:
             if 'post_id' in data:
                 collection.append(
-                    Post(data).generate_post()
+                    await Post(data).generate_post()
                 )
 
         print(collection)
@@ -42,7 +42,7 @@ class Post:
     def __init__(self, data: response_js) -> None:
         self._data = data
 
-    def generate_post(self) -> tuple:
+    async def generate_post(self) -> tuple:
         """ Generates post based on response. """
 
         # In DB owner_id and from_id
@@ -52,7 +52,7 @@ class Post:
         item_id = self._data['id']
 
         # In DB res_id
-        res_id = None
+        res_id = await self.get_res_id(self._data)
 
         # In DB title
         title = None
@@ -102,17 +102,18 @@ class Post:
         return owner_id, from_id, item_id, res_id, title, text, date, s_date,\
             not_date, link, from_type, lang, sentiment, sphinx_status, post_id
 
-    def check_if_res_id_already_in_db(self, func):
-        @wraps
-        def wrapper():
+    @staticmethod
+    def check_if_res_id_already_in_db(func):
+        @wraps(func)
+        async def wrapper(_data):
 
-            result = func()
+            result = await func(_data)
 
             if not result:
                 try:
-                    temp_db.insert_res_id('resource_social_ids', self._data['owner_id'])
+                    await temp_db.insert_res_id('resource_social_ids', _data['owner_id'])
 
-                    return temp_db.get_res_id('resource_social_ids', self._data['owner_id'])
+                    return temp_db.get_res_id('resource_social_ids', _data['owner_id'])
                 except Exception as e:
                     print(e)
             else:
@@ -120,10 +121,11 @@ class Post:
 
         return wrapper
 
+    @staticmethod
     @check_if_res_id_already_in_db
-    def get_res_id(self):
+    async def get_res_id(_data):
 
-        return temp_db.get_res_id('resource_social_ids', self._data['owner_id'])
+        return temp_db.get_res_id('resource_social_ids', _data['owner_id'])
 
 
     @staticmethod
