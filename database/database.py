@@ -43,7 +43,7 @@ class MySQLDataBase:
     def get_locations(self):
         ...
 
-    async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
+    def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
 
         cursor = await self.retrieve_connection(kwargs)
 
@@ -94,17 +94,17 @@ class TestDB(MySQLDataBase):
     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
-        super().insert_into_temp_posts(table_name, collection, *args, **kwargs)
+        await super().insert_into_temp_posts(table_name, collection, *args, **kwargs)
 
     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
-        return await super().get_res_id(table_name, s_id, *args, _type, **kwargs)
+        return await super().get_res_id(table_name, s_id, *args, _type=1, **kwargs)
 
     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def insert_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> None:
-        await super().insert_res_id(table_name, s_id, *args, _type, **kwargs)
+        await super().insert_res_id(table_name, s_id, *args, _type=1, **kwargs)
 
 
 temp_db = TestDB('temp_db')

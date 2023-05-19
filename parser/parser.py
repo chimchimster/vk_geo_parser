@@ -34,6 +34,7 @@ class ParseData:
                     await Post(data).generate_post()
                 )
 
+                temp_db.insert_into_temp_posts('temp_posts', collection)
         print(collection)
         return collection
 
@@ -55,7 +56,7 @@ class Post:
         res_id = await self.get_res_id(self._data)
 
         # In DB title
-        title = None
+        title = ''
 
         # In DB text
         text = self._data['text']
@@ -78,12 +79,6 @@ class Post:
         except:
             pass
 
-        post_id = ''
-        try:
-            post_id = self._data['post_id']
-        except:
-            pass
-
         # In DB from_type
         from_type = 3
 
@@ -97,10 +92,10 @@ class Post:
         _type = 1
 
         # In DB sphinx_status
-        sphinx_status = None
+        sphinx_status = 0
 
         return owner_id, from_id, item_id, res_id, title, text, date, s_date,\
-            not_date, link, from_type, lang, sentiment, sphinx_status, post_id
+            not_date, link, from_type, lang, sentiment, _type, sphinx_status,
 
     @staticmethod
     def check_if_res_id_already_in_db(func):
