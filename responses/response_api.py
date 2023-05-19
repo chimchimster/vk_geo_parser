@@ -7,7 +7,7 @@ from vk_geo_parser.exceptions.exceptions import VKAPIException
 
 
 @dataclass
-class ResponseAPI:
+class RequestAPI:
     """ Represents vk.ru API handler. """
 
     coordinates: tuple

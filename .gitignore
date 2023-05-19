@@ -1,2 +1,4 @@
 db_conf.py
 .env
+data/
+www/
