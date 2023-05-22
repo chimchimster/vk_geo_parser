@@ -1,12 +1,12 @@
-import asyncio
 import os
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
 from dotenv import load_dotenv
 from vk_geo_parser.database.database import temp_db
-from vk_geo_parser.custom_types.custom_types import response_js
+from vk_geo_parser.async_queue.celery_ import insert_into_temp_posts_task
 from vk_geo_parser.responses.response_api import RequestAPI
+from vk_geo_parser.custom_types.custom_types import response_js
 
 load_dotenv()
 vk_token = os.environ.get('VK_TOKEN')
@@ -21,7 +21,7 @@ query3 = RequestAPI(lst[2], 100, 6000, vk_token)
 class ParseData:
     """ Class which represents main parser. """
 
-    async def fill_collection(*args, **kwargs):
+    async def fill_collection(self, *args, **kwargs):
         # Retrieving response from kwargs
         response_json = kwargs.pop('response')
 
@@ -33,8 +33,7 @@ class ParseData:
                 collection.append(
                     await Post(data).generate_post()
                 )
-
-                temp_db.insert_into_temp_posts('temp_posts', collection)
+                insert_into_temp_posts_task.delay(temp_db, collection)
         print(collection)
         return collection
 
@@ -121,7 +120,6 @@ class Post:
     async def get_res_id(_data):
 
         return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
-
 
     @staticmethod
     def __lead_link_to_unique_format(_owner_id) -> str:

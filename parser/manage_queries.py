@@ -41,7 +41,6 @@ def manage_number_of_queries(number: int = 3):
 
 manage_number_of_queries()
 
-
 async def fill():
     query_classes = {query_class_name: query_class_value for (query_class_name, query_class_value) in globals().items()
                      if query_class_name.startswith('Query')}

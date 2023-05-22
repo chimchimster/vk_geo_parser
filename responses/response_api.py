@@ -21,7 +21,7 @@ class RequestAPI:
             try:
                 response = requests.post(f'https://api.vk.com/method/photos.search?lat={self.coordinates[0]}&'
                               f'long={self.coordinates[1]}&count={self.publications}&'
-                              f'v=5.131&access_token={self.token}&radius={self.radius}')
+                              f'v=5.131&access_token={self.token}&radius={self.radius}', timeout=(5.0, 30.0))
 
                 # Converting response to JSON data
                 response_json = json.loads(response.text)

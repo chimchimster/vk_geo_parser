@@ -2,7 +2,7 @@ import os
 import aiomysql
 from functools import wraps
 from dotenv import load_dotenv
-from mysql.connector import Connect, Error
+from mysql.connector import Error
 
 
 def throw_params_db(host: str, user: str, password: str) -> callable:
@@ -43,7 +43,7 @@ class MySQLDataBase:
     def get_locations(self):
         ...
 
-    def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
+    async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
 
         cursor = await self.retrieve_connection(kwargs)
 
@@ -55,6 +55,7 @@ class MySQLDataBase:
             await cursor.execute(query, collection[0])
         else:
             await cursor.executemany(query, collection)
+
 
     async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
 
