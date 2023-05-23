@@ -1,10 +1,10 @@
+import asyncio
 import os
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
 from dotenv import load_dotenv
 from vk_geo_parser.database.database import temp_db
-from vk_geo_parser.async_queue.celery_ import insert_into_temp_posts_task
 from vk_geo_parser.responses.response_api import RequestAPI
 from vk_geo_parser.custom_types.custom_types import response_js
 
@@ -25,17 +25,21 @@ class ParseData:
         # Retrieving response from kwargs
         response_json = kwargs.pop('response')
 
-        # Collection for temp_posts
-        collection = []
+        collection_for_temp_posts = []
+        collection_for_attachments = []
 
         for data in response_json['response']['items']:
             if 'post_id' in data:
-                collection.append(
-                    await Post(data).generate_post()
+                post = await Post(data).generate_post()
+                collection_for_temp_posts.append(
+                    post[0],
                 )
-                insert_into_temp_posts_task.delay(temp_db, collection)
-        print(collection)
-        return collection
+                collection_for_attachments.append(
+                    post[1],
+                )
+
+        await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
+        await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
 
 
 class Post:
@@ -45,56 +49,69 @@ class Post:
     async def generate_post(self) -> tuple:
         """ Generates post based on response. """
 
-        # In DB owner_id and from_id
+        # In DB temp_posts: owner_id and from_id
         owner_id = from_id = self._data['owner_id']
 
-        # In DB item_id
+        # In DB temp_posts: item_id
         item_id = self._data['id']
 
-        # In DB res_id
+        # In DB temp_posts: res_id
         res_id = await self.get_res_id(self._data)
 
-        # In DB title
+        # In DB temp_posts: title
         title = ''
 
-        # In DB text
+        # In DB temp_posts: text
         text = self._data['text']
 
-        # In DB date
+        # In DB temp_posts: date
         date = self._data['date']
 
-        # In DB s_date
+        # In DB temp_posts: s_date
         s_date = datetime.utcfromtimestamp(date).strftime('%Y-%m-%d %H:%M:%S')
 
-        # In DB not_date
+        # In DB temp_posts: not_date
         not_date = datetime.utcfromtimestamp(date).strftime('%Y-%m-%d')
 
         owner_id_link = self.__lead_link_to_unique_format(owner_id)
 
         link = ''
         try:
-            # In DB link
+            # In DB temp_posts: link
             link = f'https://vk.com/id{owner_id_link}?w=wall{owner_id_link}_{self._data["post_id"]}'
         except:
             pass
 
-        # In DB from_type
+        # In DB temp_posts: from_type
         from_type = 3
 
         # In DB lang
         lang = 0
 
-        # In DB sentiment
+        # In DB temp_posts: sentiment
         sentiment = None
 
         # In DB type
         _type = 1
 
-        # In DB sphinx_status
+        # In DB temp_posts: sphinx_status
         sphinx_status = 0
 
-        return owner_id, from_id, item_id, res_id, title, text, date, s_date,\
-            not_date, link, from_type, lang, sentiment, _type, sphinx_status,
+        # In DB temp_attachments: post_id
+        post_id = self._data['id']
+
+        # In DB temp_attachments: attachment
+        attachment = self._data['sizes'][-1]['url']
+
+        # In DB temp_attachments: type
+        attachment_type = 1
+
+        # In DB temp_attachments: status
+        status = ''
+
+        return (owner_id, from_id, item_id, res_id, title, text, date, s_date,
+            not_date, link, from_type, lang, sentiment, _type, sphinx_status,),\
+            (post_id, attachment, attachment_type, owner_id, from_id, item_id, status)
 
     @staticmethod
     def check_if_res_id_already_in_db(func):

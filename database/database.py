@@ -51,11 +51,10 @@ class MySQLDataBase:
                 f"`title`, `text`, `date`, `s_date`, `not_date`, `link`, `from_type`, `lang`, `sentiment`, `type`, " \
                 f"`sphinx_status`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 
-        if len(collection) == 1:
-            await cursor.execute(query, collection[0])
-        else:
+        if len(collection) > 1:
             await cursor.executemany(query, collection)
-
+        else:
+            await cursor.execute(query, collection[0])
 
     async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
 
@@ -75,6 +74,18 @@ class MySQLDataBase:
         cursor = await self.retrieve_connection(kwargs)
 
         await cursor.execute(f"INSERT INTO {self._db_name}.{table_name} (type, s_id) VALUES ({_type},{s_id})")
+
+    async def insert_into_attachment(self, table_name: str, collection: list, *args, **kwargs):
+
+        cursor = await self.retrieve_connection(kwargs)
+
+        query = f'INSERT INTO {self._db_name}.{table_name} (post_id, attachment, type, owner_id, from_id, item_id, ' \
+                f'status) VALUES (%s,%s,%s,%s,%s,%s,%s)'
+
+        if len(collection) > 1:
+            await cursor.executemany(query, collection)
+        else:
+            await cursor.execute(query, collection[0])
 
     @staticmethod
     async def retrieve_connection(kwargs: dict):
@@ -106,6 +117,11 @@ class TestDB(MySQLDataBase):
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def insert_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> None:
         await super().insert_res_id(table_name, s_id, *args, _type=1, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def insert_into_attachment(self, table_name: str, collection: list, *args, **kwargs):
+        await super().insert_into_attachment(table_name, collection, *args, **kwargs)
 
 
 temp_db = TestDB('temp_db')
