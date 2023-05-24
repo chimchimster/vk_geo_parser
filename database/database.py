@@ -1,6 +1,7 @@
 import os
 import aiomysql
 from functools import wraps
+from datetime import datetime
 from dotenv import load_dotenv
 from mysql.connector import Error
 
@@ -94,6 +95,26 @@ class MySQLDataBase:
 
         return await cursor.fetchall()
 
+    async def update_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
+
+        cursor = await self.retrieve_connection(kwargs)
+
+        now = datetime.now()
+
+        query = f'UPDATE {self._db_name}.{table_name} SET last_update = "{now}" WHERE coordinates = "{coordinates}";'
+
+        await cursor.execute(query)
+
+    async def get_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
+
+        cursor = await self.retrieve_connection(kwargs)
+
+        query = f'SELECT last_update FROM {self._db_name}.{table_name} WHERE coordinates = "{coordinates}";'
+
+        await cursor.execute(query)
+
+        return await cursor.fetchone()
+
     @staticmethod
     async def retrieve_connection(kwargs: dict):
         """ Retrieves connection from kwargs.
@@ -134,6 +155,16 @@ class TestDB(MySQLDataBase):
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def get_coordinates(self, table_name: str, _limit=3, *args, **kwargs):
         return await super().get_coordinates(table_name, _limit, *args, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def update_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
+        await super().update_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def get_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
+        return await super().get_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
 
 
 temp_db = TestDB('temp_db')

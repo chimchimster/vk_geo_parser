@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
@@ -14,6 +15,8 @@ vk_token = os.environ.get('VK_TOKEN')
 class ParseData:
     """ Class which represents main parser. """
 
+    coordinates = None
+
     async def fill_collection(self, *args, **kwargs):
         # Retrieving response from kwargs
         response_json = kwargs.pop('response')
@@ -24,19 +27,29 @@ class ParseData:
         async def append_data(collection: list, post):
             collection.append(post)
 
+        coordinates = None
+
         for data in response_json['response']['items']:
             if 'post_id' in data:
                 post = await Post(data).generate_post()
-                await append_data(collection_for_temp_posts, post[0])
-                await append_data(collection_for_attachments, post[1])
+
+                coordinates = ','.join(self.coordinates)
+                last_update = await temp_db.get_coordinates_last_update_field('vk_locations_info', coordinates)
+                last_update = time.mktime(last_update[0].timetuple())
+
+                if post[0] and post[0][6] > last_update:
+                    await append_data(collection_for_temp_posts, post[0])
+                    await append_data(collection_for_attachments, post[1])
 
         await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
         await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
+        await temp_db.update_coordinates_last_update_field('vk_locations_info', coordinates)
 
 
 class Post:
     def __init__(self, data) -> None:
         self._data = data
+        self._coordinates = None
 
     async def generate_post(self) -> tuple:
         """ Generates post based on response. """
