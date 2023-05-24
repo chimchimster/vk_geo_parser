@@ -6,16 +6,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 from vk_geo_parser.database.database import temp_db
 from vk_geo_parser.responses.response_api import RequestAPI
-from vk_geo_parser.custom_types.custom_types import response_js
 
 load_dotenv()
 vk_token = os.environ.get('VK_TOKEN')
-
-lst = [('55.733647398995075', '37.61603658440511'), ('55.168822388426136', '61.4167578224923'), ('21.15839201715473', '79.05503789744886')]
-
-query1 = RequestAPI(lst[0], 100, 6000, vk_token)
-query2 = RequestAPI(lst[1], 100, 6000, vk_token)
-query3 = RequestAPI(lst[2], 100, 6000, vk_token)
 
 
 class ParseData:
@@ -28,22 +21,21 @@ class ParseData:
         collection_for_temp_posts = []
         collection_for_attachments = []
 
+        async def append_data(collection: list, post):
+            collection.append(post)
+
         for data in response_json['response']['items']:
             if 'post_id' in data:
                 post = await Post(data).generate_post()
-                collection_for_temp_posts.append(
-                    post[0],
-                )
-                collection_for_attachments.append(
-                    post[1],
-                )
+                await append_data(collection_for_temp_posts, post[0])
+                await append_data(collection_for_attachments, post[1])
 
         await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
         await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
 
 
 class Post:
-    def __init__(self, data: response_js) -> None:
+    def __init__(self, data) -> None:
         self._data = data
 
     async def generate_post(self) -> tuple:

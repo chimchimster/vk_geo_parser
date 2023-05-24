@@ -40,9 +40,6 @@ class MySQLDataBase:
     def __init__(self, db_name: str) -> None:
         self._db_name = db_name
 
-    def get_locations(self):
-        ...
-
     async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
 
         cursor = await self.retrieve_connection(kwargs)
@@ -60,7 +57,7 @@ class MySQLDataBase:
 
         cursor = await self.retrieve_connection(kwargs)
 
-        await cursor.execute(f"SELECT id from {self._db_name}.{table_name} WHERE s_id={s_id} AND type={_type}")
+        await cursor.execute(f"SELECT id FROM {self._db_name}.{table_name} WHERE s_id={s_id} AND type={_type}")
 
         res_id = await cursor.fetchone()
 
@@ -86,6 +83,16 @@ class MySQLDataBase:
             await cursor.executemany(query, collection)
         else:
             await cursor.execute(query, collection[0])
+
+    async def get_coordinates(self, table_name: str, _limit: int = 3, *args, **kwargs):
+
+        cursor = await self.retrieve_connection(kwargs)
+
+        query = f'SELECT coordinates FROM {self._db_name}.{table_name} ORDER BY RAND() LIMIT {_limit};'
+
+        await cursor.execute(query)
+
+        return await cursor.fetchall()
 
     @staticmethod
     async def retrieve_connection(kwargs: dict):
@@ -122,6 +129,11 @@ class TestDB(MySQLDataBase):
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def insert_into_attachment(self, table_name: str, collection: list, *args, **kwargs):
         await super().insert_into_attachment(table_name, collection, *args, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def get_coordinates(self, table_name: str, _limit=3, *args, **kwargs):
+        return await super().get_coordinates(table_name, _limit, *args, **kwargs)
 
 
 temp_db = TestDB('temp_db')
