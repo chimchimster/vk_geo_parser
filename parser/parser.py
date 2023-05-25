@@ -5,8 +5,9 @@ from copy import deepcopy
 from functools import wraps
 from datetime import datetime
 from dotenv import load_dotenv
-from vk_geo_parser.database.database import temp_db
-from vk_geo_parser.responses.response_api import RequestAPI
+from vk_geo_parser.database.database import temp_db, temp_db_ch
+from vk_geo_parser.responses.response_api import RequestAPIResource
+
 
 load_dotenv()
 vk_token = os.environ.get('VK_TOKEN')
@@ -21,8 +22,16 @@ class ParseData:
         # Retrieving response from kwargs
         response_json = kwargs.pop('response')
 
+        global collection_of_owners_ids_for_resources
+
         collection_for_temp_posts = []
         collection_for_attachments = []
+        collection_for_resources = []
+        collection_of_owners_ids_for_resources = set()
+
+        async def send_to_resources():
+            result = await RequestAPIResource(','.join(map(str, collection_of_owners_ids_for_resources)), vk_token)()
+            print(result)
 
         async def append_data(collection: list, post):
             collection.append(post)
@@ -32,17 +41,19 @@ class ParseData:
         for data in response_json['response']['items']:
             if 'post_id' in data:
                 post = await Post(data).generate_post()
-
-                coordinates = ','.join(self.coordinates)
-                last_update = await temp_db.get_coordinates_last_update_field('vk_locations_info', coordinates)
+                last_update = await temp_db.get_coordinates_last_update_field('vk_locations_info', self.coordinates)
                 last_update = time.mktime(last_update[0].timetuple())
 
                 if post[0] and post[0][6] > last_update:
                     await append_data(collection_for_temp_posts, post[0])
                     await append_data(collection_for_attachments, post[1])
 
-        await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
-        await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
+        await send_to_resources()
+
+        if collection_for_temp_posts:
+            await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
+            await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
+
         await temp_db.update_coordinates_last_update_field('vk_locations_info', coordinates)
 
 
@@ -129,6 +140,7 @@ class Post:
                 try:
                     await temp_db.insert_res_id('resource_social_ids', _data['owner_id'])
 
+                    collection_of_owners_ids_for_resources.add(_data['owner_id'])
                     return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
                 except Exception as e:
                     print(e)

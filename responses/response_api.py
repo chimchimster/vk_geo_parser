@@ -1,4 +1,7 @@
+import asyncio
 import json
+import time
+
 import requests
 
 from functools import wraps
@@ -7,10 +10,10 @@ from vk_geo_parser.exceptions.exceptions import VKAPIException
 
 
 @dataclass
-class RequestAPI:
-    """ Represents vk.ru API handler. """
+class RequestAPIAttachment:
+    """ Represents vk.ru API handler for attachment. """
 
-    coordinates: tuple
+    coordinates: str
     publications: int
     radius: int
     token: str
@@ -19,9 +22,11 @@ class RequestAPI:
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                response = requests.post(f'https://api.vk.com/method/photos.search?lat={self.coordinates[0]}&'
-                              f'long={self.coordinates[1]}&count={self.publications}&'
-                              f'v=5.131&access_token={self.token}&radius={self.radius}', timeout=(5.0, 30.0))
+                response = requests.post(f'https://api.vk.com/method/photos.search?lat={str(self.coordinates).split(",")[0]}&'
+                                         f'long={str(self.coordinates).split(",")[1]}&count={self.publications}&'
+                                         f'v=5.131&access_token={self.token}&radius={self.radius}&',
+                                         # f'start_time={int(time.time()) - 1800}&end_time={int(time.time())}',
+                                         timeout=(5.0, 30.0))
 
                 # Converting response to JSON data
                 response_json = json.loads(response.text)
@@ -34,3 +39,19 @@ class RequestAPI:
                 return result
 
         return wrapper
+
+
+@dataclass
+class RequestAPIResource:
+    """ Represents VK API for resources. """
+
+    owners_ids: str
+    token: str
+
+    async def __call__(self):
+        response = requests.post(f'https://api.vk.com/method/users.get?user_ids={self.owners_ids}&'
+                                 f'v=5.131&access_token={self.token}')
+
+        response_json = json.loads(response.text)
+
+        return response_json

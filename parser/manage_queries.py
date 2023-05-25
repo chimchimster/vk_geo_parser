@@ -1,7 +1,7 @@
 import asyncio
 import os
 from parser import ParseData
-from vk_geo_parser.responses.response_api import RequestAPI
+from vk_geo_parser.responses.response_api import RequestAPIAttachment
 from vk_geo_parser.database.database import temp_db
 
 
@@ -11,11 +11,9 @@ vk_token = os.environ.get('VK_TOKEN')
 async def get_coordinates():
     """ Getting coordinates from database. """
 
-    result = await temp_db.get_coordinates('vk_locations_info')
+    result = await temp_db.get_coordinates('vk_locations_info', 3)
 
-    coordinates = [coordinate[0].split(',') for coordinate in result]
-
-    return coordinates
+    return result
 
 
 async def manage_number_of_queries(number: int = 3):
@@ -37,7 +35,7 @@ async def manage_number_of_queries(number: int = 3):
         """ Creates objects which will
             decorate dynamic classes. """
 
-        return [RequestAPI(coordinates[i], 100, 6000, vk_token) for i in range(number)]
+        return [RequestAPIAttachment(coordinates[i][0], 1000, 6000, vk_token) for i in range(number)]
 
     class_names = create_class_names()
     query_objects = await create_query_objects()
@@ -46,7 +44,7 @@ async def manage_number_of_queries(number: int = 3):
     for number, class_name in enumerate(class_names):
         globals()[class_name] = type(class_name, (ParseData,), {
             'fill_collection': query_objects[number](ParseData.fill_collection),
-            'coordinates': coordinates[number],
+            'coordinates': coordinates[number][0],
         })
 
     print(f'I have successfully created {len(class_names)} classes')

@@ -1,45 +1,17 @@
+import asyncio
 import os
-import aiomysql
-from functools import wraps
+
 from datetime import datetime
 from dotenv import load_dotenv
-from mysql.connector import Error
+from dataclasses import dataclass
+from vk_geo_parser.database.decorators import throw_params_db, throw_params_db_ch
 
 
-def throw_params_db(host: str, user: str, password: str) -> callable:
-    """ Function which allows throwing parameters to connect database. """
-
-    def connect_db(func: callable) -> callable:
-        """ Function which allows placing specified function into inner scope. """
-        @wraps(func)
-        async def wrapper(*args: tuple[str], **kwargs: tuple[str]) -> list | tuple | None:
-            """ Function decorator which allows the operations in database. """
-
-            connection = await aiomysql.connect(
-                host=host,
-                user=user,
-                password=password,
-            )
-            try:
-                result = await func(*args, connection=connection, **kwargs)
-            except Error as e:
-                print(e)
-            else:
-                await connection.commit()
-                return result
-            finally:
-                connection.close()
-
-        return wrapper
-
-    return connect_db
-
-
+@dataclass
 class MySQLDataBase:
     """ Base class for each unique database connection. """
 
-    def __init__(self, db_name: str) -> None:
-        self._db_name = db_name
+    _db_name: str
 
     async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
 
@@ -51,7 +23,8 @@ class MySQLDataBase:
 
         if len(collection) > 1:
             await cursor.executemany(query, collection)
-        else:
+        elif len(collection) == 1:
+            print(collection)
             await cursor.execute(query, collection[0])
 
     async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
@@ -83,13 +56,14 @@ class MySQLDataBase:
         if len(collection) > 1:
             await cursor.executemany(query, collection)
         else:
+            print(collection)
             await cursor.execute(query, collection[0])
 
     async def get_coordinates(self, table_name: str, _limit: int = 3, *args, **kwargs):
 
         cursor = await self.retrieve_connection(kwargs)
 
-        query = f'SELECT coordinates FROM {self._db_name}.{table_name} ORDER BY RAND() LIMIT {_limit};'
+        query = f'SELECT coordinates, country_id, region_id, city_id FROM {self._db_name}.{table_name} ORDER BY RAND() LIMIT {_limit};'
 
         await cursor.execute(query)
 
@@ -167,10 +141,40 @@ class TestDB(MySQLDataBase):
         return await super().get_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
 
 
+@dataclass
+class ClickHouseDataBase:
+
+    _db_name: str
+
+    def __enter__(self):
+        return self
+
+    @throw_params_db_ch(host=os.environ.get('CLICK_HOUSE_HOST'), port=os.environ.get('CLICK_HOUSE_PORT'),
+                        user=os.environ.get('CLICK_HOUSE_USER'), password=os.environ.get('CLICK_HOUSE_PASSWORD'))
+    async def insert_into_resource_social(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
+
+        cursor = kwargs.pop('cursor')
+
+        await cursor.execute(
+                f'INSERT INTO {self._db_name}.{table_name} (id, country_id, region_id, city_id, resource_name,'
+                f' link, screen_name, type, stability, image_profile, s_id, start_date_imas, members, info_check,'
+                f' datetime_enable, worker) VALUES',
+                collection,
+            )
+
+
 temp_db = TestDB('temp_db')
+temp_db_ch = ClickHouseDataBase('default')
 
 
 
+# async def f():
+#     await temp_db_ch.insert_into_resource_social('resource_social', ([287, 222, 0, 0, 'Арайлым', 'https://www.instagram.com/04.11.1976', '04.11.1976', 4, 0, 'https://scontent-frt3-2.cdninstagram.com/vp/4c5bf8afd35fbad9a746e97279686f46/5BA6C18D/t51.2885-19/10898993_775921005819360_54470393_a.jpg', '1674249566', '1970-01-01', 80, 1, '2017-10-12 14:03:56', 4],))
+#
+# asyncio.run(f())
 
 
+# x = "3  287 222	    0	0	Арайлым	https://www.instagram.com/04.11.1976	04.11.1976	4	0	https://scontent-frt3-2.cdninstagram.com/vp/4c5bf8afd35fbad9a746e97279686f46/5BA6C18D/t51.2885-19/10898993_775921005819360_54470393_a.jpg	1674249566	1970-01-01	80	1	2017-10-12 14:03:56	4'"
+# x = x.split()
+# print(x)
 
