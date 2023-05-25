@@ -17,6 +17,9 @@ class ParseData:
     """ Class which represents main parser. """
 
     coordinates = None
+    country_id = None
+    region_id = None
+    city_id = None
 
     async def fill_collection(self, *args, **kwargs):
         # Retrieving response from kwargs
@@ -31,12 +34,10 @@ class ParseData:
 
         async def send_to_resources():
             result = await RequestAPIResource(','.join(map(str, collection_of_owners_ids_for_resources)), vk_token)()
-            print(result)
+            # result = [lst for lst in result]
 
         async def append_data(collection: list, post):
             collection.append(post)
-
-        coordinates = None
 
         for data in response_json['response']['items']:
             if 'post_id' in data:
@@ -48,13 +49,14 @@ class ParseData:
                     await append_data(collection_for_temp_posts, post[0])
                     await append_data(collection_for_attachments, post[1])
 
-        await send_to_resources()
+        if collection_of_owners_ids_for_resources:
+            await send_to_resources()
 
         if collection_for_temp_posts:
             await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
             await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
 
-        await temp_db.update_coordinates_last_update_field('vk_locations_info', coordinates)
+        await temp_db.update_coordinates_last_update_field('vk_locations_info', self.coordinates)
 
 
 class Post:

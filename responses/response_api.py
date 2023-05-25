@@ -50,7 +50,7 @@ class RequestAPIResource:
 
     async def __call__(self):
         response = requests.post(f'https://api.vk.com/method/users.get?user_ids={self.owners_ids}&'
-                                 f'v=5.131&access_token={self.token}')
+                                 f'v=5.131&access_token={self.token}&fields=crop_photo,screen_name')
 
         response_json = json.loads(response.text)
 

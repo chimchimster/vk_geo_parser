@@ -45,6 +45,9 @@ async def manage_number_of_queries(number: int = 3):
         globals()[class_name] = type(class_name, (ParseData,), {
             'fill_collection': query_objects[number](ParseData.fill_collection),
             'coordinates': coordinates[number][0],
+            'country_id': coordinates[number][1],
+            'region_id': coordinates[number][2],
+            'city_id': coordinates[number][3],
         })
 
     print(f'I have successfully created {len(class_names)} classes')
