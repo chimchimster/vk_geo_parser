@@ -29,7 +29,11 @@
 # asyncio.run(main())
 #
 # print(os.environ['HOME'])
-import datetime
-import time
+# from datetime import datetime
+# print(datetime.now())
+# print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+# print(datetime(1970, 1, 1))
 
-print(int(time.time()))
+# x = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+# print('-'.join([_ for _ in x]))
+

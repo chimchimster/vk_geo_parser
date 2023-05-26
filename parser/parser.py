@@ -29,25 +29,48 @@ class ParseData:
 
         collection_for_temp_posts = []
         collection_for_attachments = []
-        collection_for_resources = []
         collection_of_owners_ids_for_resources = set()
 
         async def send_to_resources():
             result = await RequestAPIResource(','.join(map(str, collection_of_owners_ids_for_resources)), vk_token)()
-            # result = [lst for lst in result]
 
-        async def append_data(collection: list, post):
-            collection.append(post)
+            result = [(await temp_db.get_res_id('resource_social_ids', lst['id']),
+                       self.country_id, self.region_id, self.city_id,
+                       # In DB resource_social: resource_name
+                       lst['first_name'] if 'first_name' in lst else '' + ' ' + lst['last_name'] if 'last_name' in lst else '',
+                       # In DB link
+                       f'https://vk.com/id{Post.lead_link_to_unique_format(lst["id"])}',
+                       # In DB resource_social: screen name
+                       lst['screen_name'] if 'screen_name' in lst else '',
+                       # In DB resource_social: type, stability
+                       1, 0,
+                       # In DB resource_social: image profile
+                       lst['crop_photo']['photo']['sizes'][-1]['url'] if 'crop_photo' in lst else '',
+                       # In DB resource_social: s_id
+                       str(lst['id']),
+                       # In DB resource_social: start_date_imas
+                       datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                       # In DB resource_social: members,
+                       lst['followers_count'],
+                       # In DB resource_social: info check
+                       1,
+                       # In DB datetime_enable
+                       datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                       # In DB resource_social: worker
+                       4,
+                       ) for lst in result['response']]
+
+            await temp_db_ch.insert_into_resource_social('resource_social', result)
+
+        async def append_data(collection: list, _post):
+            collection.append(_post)
 
         for data in response_json['response']['items']:
-            if 'post_id' in data:
-                post = await Post(data).generate_post()
-                last_update = await temp_db.get_coordinates_last_update_field('vk_locations_info', self.coordinates)
-                last_update = time.mktime(last_update[0].timetuple())
+            post = await Post(data).generate_post()
 
-                if post[0] and post[0][6] > last_update:
-                    await append_data(collection_for_temp_posts, post[0])
-                    await append_data(collection_for_attachments, post[1])
+            if post[0]:
+                await append_data(collection_for_temp_posts, post[0])
+                await append_data(collection_for_attachments, post[1])
 
         if collection_of_owners_ids_for_resources:
             await send_to_resources()
@@ -91,14 +114,13 @@ class Post:
         # In DB temp_posts: not_date
         not_date = datetime.utcfromtimestamp(date).strftime('%Y-%m-%d')
 
-        owner_id_link = self.__lead_link_to_unique_format(owner_id)
+        owner_id_link = self.lead_link_to_unique_format(owner_id)
 
-        link = ''
-        try:
+        if 'post_id' in self._data:
             # In DB temp_posts: link
             link = f'https://vk.com/id{owner_id_link}?w=wall{owner_id_link}_{self._data["post_id"]}'
-        except:
-            pass
+        else:
+            link = f'https://vk.com/photo{owner_id}_{item_id}'
 
         # In DB temp_posts: from_type
         from_type = 3
@@ -158,7 +180,7 @@ class Post:
         return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
 
     @staticmethod
-    def __lead_link_to_unique_format(_owner_id) -> str:
+    def lead_link_to_unique_format(_owner_id) -> str:
         """ Method which leads owner_id in link to unique format.
 
             :returns: owner_id (str). """

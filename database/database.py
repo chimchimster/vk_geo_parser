@@ -59,11 +59,11 @@ class MySQLDataBase:
             print(collection)
             await cursor.execute(query, collection[0])
 
-    async def get_coordinates(self, table_name: str, _limit: int = 3, *args, **kwargs):
+    async def get_coordinates(self, table_name: str, *args, **kwargs):
 
         cursor = await self.retrieve_connection(kwargs)
 
-        query = f'SELECT coordinates, country_id, region_id, city_id FROM {self._db_name}.{table_name} ORDER BY RAND() LIMIT {_limit};'
+        query = f'SELECT coordinates, country_id, region_id, city_id FROM {self._db_name}.{table_name};'
 
         await cursor.execute(query)
 
