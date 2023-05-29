@@ -1,16 +1,13 @@
-import asyncio
-import math
 import os
 import random
 import string
-import time
+import asyncio
 
 from parser import ParseData
-from vk_geo_parser.responses.response_api import RequestAPIAttachment
 from vk_geo_parser.database.database import temp_db
+from vk_geo_parser.responses.response_api import RequestAPIAttachment
 
 vk_token = os.environ.get('VK_TOKEN')
-
 
 class Query:
 
@@ -101,22 +98,15 @@ class DataManager:
         return list(zip(lst, tokens_list))
 
 
-class TasksQueue:
+class QueryTasks:
     manager = DataManagerDescriptor()
 
     def __init__(self, manager):
         self._manager = manager
-        self._queue = asyncio.Queue()
 
-    async def apply_queue(self):
+    async def apply_queries(self):
         queries_data = await self._manager.merge_coordinates_and_tokens()
         queries_objects = [Query(*data) for data in queries_data]
-
-        # for obj in queries_objects:
-        #     await self._queue.put(obj.fill())
-        #     query_object = await self._queue.get()
-        #     print(query_object)
-        #     await query_object.fill()
 
         await asyncio.gather(
             *(query() for query in queries_objects)
@@ -124,6 +114,11 @@ class TasksQueue:
 
 
 async def fill():
+    manager = DataManager()
+    query_tasks_manager = QueryTasks(manager)
+
+    await query_tasks_manager.apply_queries()
+
     query_classes = {query_class_name: query_class_value for (query_class_name, query_class_value) in
                      globals().items() if query_class_name.startswith('Query_')}
 
@@ -132,8 +127,5 @@ async def fill():
     )
 
 
-d = DataManager()
-c = TasksQueue(d)
-
-asyncio.run(c.apply_queue())
-asyncio.run(fill())
+if __name__ == '__main__':
+    asyncio.run(fill())
