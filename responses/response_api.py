@@ -1,7 +1,4 @@
-import asyncio
 import json
-import time
-
 import requests
 
 from functools import wraps
@@ -25,11 +22,12 @@ class RequestAPIAttachment:
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
+                print(str(self.coordinates).split(",")[0], str(self.coordinates).split(",")[1])
                 response = requests.post(f'https://api.vk.com/method/photos.search?q=$20&'
                                          f'lat={str(self.coordinates).split(",")[0]}&'
                                          f'long={str(self.coordinates).split(",")[1]}&count={self.publications}&'
                                          f'v=5.131&access_token={self.token}&radius={self.radius}&',
-                                         f'start_time={int(time.time()) - 84000}&end_time={int(time.time())}',
+                                         # f'start_time={int(time.time()) - 84000}&end_time={int(time.time())}',
                                          timeout=(5.0, 30.0))
 
                 # Converting response to JSON data

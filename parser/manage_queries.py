@@ -1,4 +1,5 @@
 import asyncio
+import math
 import os
 import random
 import string
@@ -8,8 +9,69 @@ from parser import ParseData
 from vk_geo_parser.responses.response_api import RequestAPIAttachment
 from vk_geo_parser.database.database import temp_db
 
-
 vk_token = os.environ.get('VK_TOKEN')
+
+
+class Query:
+
+    def __init__(self, coordinates, token):
+        self.coordinates = coordinates
+        self.token = token
+
+    async def manage_number_of_queries(self, number: int = 3):
+        """ Determines how many queries
+            should be in one flow and
+            then creates them. """
+
+        def create_class_names() -> list:
+            """ :returns: list of class_names
+                for queries based on given number. """
+
+            def random_string(length):
+                """ Generates random string for queries class names. """
+
+                pool = string.ascii_letters + string.digits
+                return ''.join(random.choice(pool) for i in range(length))
+
+            number_list = ['Query_' + random_string(64) + str(num) for num in range(1, number + 1)]
+
+            return number_list
+
+        async def create_query_objects():
+            """ Creates objects which will
+                decorate dynamic classes. """
+
+            return [RequestAPIAttachment(self.coordinates[i][0], 1000, 6000, self.token,
+                    self.coordinates[i][1], self.coordinates[i][2], self.coordinates[i][3])
+                    for i in range(number)]
+
+        class_names = create_class_names()
+        query_objects = await create_query_objects()
+
+        # Dynamic class creation
+        for number, class_name in enumerate(class_names):
+            globals()[class_name] = type(class_name, (ParseData,), {
+                'fill_collection': query_objects[number](ParseData.fill_collection),
+            })
+
+        print(f'I have successfully created {len(class_names)} classes')
+
+    async def __call__(self, *args, **kwargs):
+        await self.manage_number_of_queries(len(self.coordinates))
+
+
+class DataManagerDescriptor:
+    def __set_name__(self, owner, name):
+        self.name = '_' + name
+
+    def __get__(self, instance, owner):
+        return getattr(instance, self.name)
+
+    def __set__(self, instance, value):
+        if isinstance(instance, DataManager):
+            setattr(instance, self.name, value)
+        else:
+            raise TypeError('Manager must be a DataManager type!')
 
 
 class DataManager:
@@ -23,79 +85,55 @@ class DataManager:
         return os.environ.get('VK_TOKEN').split(',')
 
     async def merge_coordinates_and_tokens(self):
-        start = 0
         coordinates = await self.__get_coordinates()
 
         tokens = await self.__get_tokens()
 
-        shifter_coordinates, shifter_tokens = 0, 0
-        merged = []
-        while start < len(coordinates):
-            if shifter_tokens == len(tokens):
-                shifter_tokens = 0
+        # Since vk allows only 3 queries to its API
+        delimiter = 3
 
-            merged.append((coordinates[shifter_coordinates:shifter_coordinates+3], tokens[shifter_tokens]))
-            shifter_coordinates += 3
-            shifter_tokens += 1
-            start += 3
+        lst = []
+        for start in range(0, len(coordinates), delimiter):
+            lst.append(coordinates[start:delimiter + start])
 
-        return merged
+        tokens_list = tokens * len(lst)
+
+        return list(zip(lst, tokens_list))
 
 
-async def manage_number_of_queries(coordinates, number: int = 3):
-    """ Determines how many queries
-        should be in one flow and
-        then creates them. """
+class TasksQueue:
+    manager = DataManagerDescriptor()
 
-    def create_class_names() -> list:
-        """ :returns: list of class_names
-            for queries based on given number. """
+    def __init__(self, manager):
+        self._manager = manager
+        self._queue = asyncio.Queue()
 
-        def random_string(length):
-            pool = string.ascii_letters + string.digits
-            return ''.join(random.choice(pool) for i in range(length))
+    async def apply_queue(self):
+        queries_data = await self._manager.merge_coordinates_and_tokens()
+        queries_objects = [Query(*data) for data in queries_data]
 
-        number_list = ['Query' + random_string(64) + str(num) for num in range(1, number+1)]
+        # for obj in queries_objects:
+        #     await self._queue.put(obj.fill())
+        #     query_object = await self._queue.get()
+        #     print(query_object)
+        #     await query_object.fill()
 
-        return number_list
-
-    async def create_query_objects():
-        """ Creates objects which will
-            decorate dynamic classes. """
-
-        return [RequestAPIAttachment(coordinates[0][i][0], 1000, 6000, coordinates[1],
-                                     coordinates[0][i][1], coordinates[0][i][2], coordinates[0][i][3]) for i in range(number)]
-
-    class_names = create_class_names()
-    query_objects = await create_query_objects()
-
-    # Dynamic class creation
-    for number, class_name in enumerate(class_names):
-        globals()[class_name] = type(class_name, (ParseData,), {
-            'fill_collection': query_objects[number](ParseData.fill_collection),
-        })
-
-    print(f'I have successfully created {len(class_names)} classes')
+        await asyncio.gather(
+            *(query() for query in queries_objects)
+        )
 
 
-async def fill(obj):
-    await manage_number_of_queries(obj)
-
-    query_classes = {query_class_name: query_class_value for (query_class_name, query_class_value) in globals().items()
-                     if query_class_name.startswith('Query')}
+async def fill():
+    query_classes = {query_class_name: query_class_value for (query_class_name, query_class_value) in
+                     globals().items() if query_class_name.startswith('Query_')}
 
     await asyncio.gather(
         *(query.fill_collection() for query in query_classes.values())
     )
 
 
-async def launch_tree():
-    objects = await DataManager().merge_coordinates_and_tokens()
+d = DataManager()
+c = TasksQueue(d)
 
-    for obj in objects:
-        try:
-            await fill(obj)
-        except Exception as e:
-            print(e)
-
-asyncio.run(launch_tree())
+asyncio.run(c.apply_queue())
+asyncio.run(fill())
