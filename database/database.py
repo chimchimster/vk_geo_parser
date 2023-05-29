@@ -166,15 +166,3 @@ class ClickHouseDataBase:
 temp_db = TestDB('temp_db')
 temp_db_ch = ClickHouseDataBase('default')
 
-
-
-# async def f():
-#     await temp_db_ch.insert_into_resource_social('resource_social', ([287, 222, 0, 0, 'Арайлым', 'https://www.instagram.com/04.11.1976', '04.11.1976', 4, 0, 'https://scontent-frt3-2.cdninstagram.com/vp/4c5bf8afd35fbad9a746e97279686f46/5BA6C18D/t51.2885-19/10898993_775921005819360_54470393_a.jpg', '1674249566', '1970-01-01', 80, 1, '2017-10-12 14:03:56', 4],))
-#
-# asyncio.run(f())
-
-
-# x = "3  287 222	    0	0	Арайлым	https://www.instagram.com/04.11.1976	04.11.1976	4	0	https://scontent-frt3-2.cdninstagram.com/vp/4c5bf8afd35fbad9a746e97279686f46/5BA6C18D/t51.2885-19/10898993_775921005819360_54470393_a.jpg	1674249566	1970-01-01	80	1	2017-10-12 14:03:56	4'"
-# x = x.split()
-# print(x)
-

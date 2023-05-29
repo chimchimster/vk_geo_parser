@@ -9,6 +9,7 @@ from vk_geo_parser.responses.response_api import RequestAPIAttachment
 
 vk_token = os.environ.get('VK_TOKEN')
 
+
 class Query:
 
     def __init__(self, coordinates, token):
@@ -38,7 +39,7 @@ class Query:
             """ Creates objects which will
                 decorate dynamic classes. """
 
-            return [RequestAPIAttachment(self.coordinates[i][0], 1000, 6000, self.token,
+            return [RequestAPIAttachment(self.coordinates[i][0], 1000, 50000, self.token,
                     self.coordinates[i][1], self.coordinates[i][2], self.coordinates[i][3])
                     for i in range(number)]
 
@@ -114,6 +115,7 @@ class QueryTasks:
 
 
 async def fill():
+
     manager = DataManager()
     query_tasks_manager = QueryTasks(manager)
 

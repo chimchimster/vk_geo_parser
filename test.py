@@ -33,7 +33,12 @@
 # print(datetime.now())
 # print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 # print(datetime(1970, 1, 1))
+import time
 
 # x = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
 # print('-'.join([_ for _ in x]))
 
+x = time.time()
+print(x)
+
+print(x - 84000)

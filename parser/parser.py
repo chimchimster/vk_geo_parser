@@ -1,6 +1,4 @@
-import asyncio
 import os
-import time
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
@@ -126,7 +124,7 @@ class Post:
         # In DB temp_posts: from_type
         from_type = 3
 
-        # In DB lang
+        # In DB temp_posts: lang
         lang = 0
 
         # In DB temp_posts: sentiment
