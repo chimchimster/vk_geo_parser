@@ -33,7 +33,6 @@ class VKAPIException(Exception):
         self.error_code = error_code
 
     def __str__(self):
-        print(self.error_code)
         return f'error code {self.error_code} -> {ErrorCodes(self.error_code)}'
 
 

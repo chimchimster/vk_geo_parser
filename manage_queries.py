@@ -1,11 +1,18 @@
 import random
 import string
 import asyncio
+import argparse
 
-from parser import ParseData, statistics_manager
-from vk_geo_parser.database.database import temp_db
-from vk_geo_parser.responses.response_api import RequestAPIAttachment
-from vk_geo_parser.telegram_logs.tg_logs import logger
+from parser.parser import ParseData, statistics_manager
+from database.database import temp_db
+from telegram_logs.tg_logs import logger
+from responses.response_api import RequestAPIAttachment
+
+parser1 = argparse.ArgumentParser(description='Process how many queries there should be.')
+parser1.add_argument('integer', metavar='n', type=int, help='number for queries')
+
+args = parser1.parse_args()
+number_of_queries = args.__dict__.get('integer')
 
 
 class Query:
@@ -14,7 +21,7 @@ class Query:
         self.coordinates = coordinates
         self.token = token
 
-    async def manage_number_of_queries(self, number: int = 3):
+    async def manage_number_of_queries(self, number: int = number_of_queries):
         """ Determines how many queries
             should be in one flow and
             then creates them. """
