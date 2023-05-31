@@ -1,10 +1,10 @@
 import json
 import time
-
-import requests
+import aiohttp
 
 from functools import wraps
 from dataclasses import dataclass
+from vk_geo_parser.telegram_logs.tg_logs import catch_log
 from vk_geo_parser.exceptions.exceptions import VKAPIException
 
 
@@ -22,23 +22,27 @@ class RequestAPIAttachment:
 
     def __call__(self, func):
         @wraps(func)
-        def wrapper(**kwargs):
+        async def wrapper(**kwargs):
             try:
-                print(str(self.coordinates).split(",")[0], str(self.coordinates).split(",")[1])
-                response = requests.post(f'https://api.vk.com/method/photos.search?'
-                                         f'lat={str(self.coordinates).split(",")[0]}&'
-                                         f'long={str(self.coordinates).split(",")[1]}&count={self.publications}&'
-                                         f'v=5.131&access_token={self.token}&radius={self.radius}&',
-                                         f'start_time={int(time.time()) - 84000}&end_time={int(time.time())}',
-                                         timeout=(5.0, 30.0))
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(f'https://api.vk.com/method/photos.search?'
+                                        f'lat={str(self.coordinates).split(",")[0]}&'
+                                        f'long={str(self.coordinates).split(",")[1]}&count={self.publications}&'
+                                        f'v=5.131&access_token={self.token}&radius={self.radius}&'
+                                        f'start_time={int(time.time()) - 84000}&end_time={int(time.time())}') as response:
 
-                # Converting response to JSON data
-                response_json = json.loads(response.text)
+                        # Converting response to text data
+                        response_json = await response.text()
 
-                result = func(self, response=response_json, **kwargs)
+                        # Converting response to JSON data
+                        response_json = json.loads(response_json)
+
+                        await check_errors(response_json)
+
+                        result = await func(self, response=response_json, **kwargs)
 
             except VKAPIException as v:
-                print(v)
+                catch_log(str(v), level='ERROR')
             else:
                 return result
 
@@ -53,9 +57,28 @@ class RequestAPIResource:
     token: str
 
     async def __call__(self):
-        response = requests.post(f'https://api.vk.com/method/users.get?user_ids={self.owners_ids}&'
-                                 f'v=5.131&access_token={self.token}&fields=crop_photo,screen_name,followers_count')
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(f'https://api.vk.com/method/users.get?user_ids={self.owners_ids}&'
+                                     f'v=5.131&access_token={self.token}&'
+                                     f'fields=crop_photo,screen_name,followers_count') as response:
 
-        response_json = json.loads(response.text)
+                    # Converting response to text
+                    response_json = await response.text()
 
-        return response_json
+                    # Converting response to JSON
+                    response_json = json.loads(response_json)
+
+                    await check_errors(response_json)
+
+                    return response_json
+
+        except VKAPIException as v:
+            catch_log(str(v), level='ERROR')
+
+
+async def check_errors(response_json):
+    if response_json.get('error'):
+        error_code = response_json['error']['error_code']
+        log = str(VKAPIException(error_code))
+        catch_log(log, level='ERROR')

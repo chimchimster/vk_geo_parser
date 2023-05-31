@@ -56,7 +56,6 @@ class MySQLDataBase:
         if len(collection) > 1:
             await cursor.executemany(query, collection)
         else:
-            print(collection)
             await cursor.execute(query, collection[0])
 
     async def get_coordinates(self, table_name: str, *args, **kwargs):
@@ -88,6 +87,16 @@ class MySQLDataBase:
         await cursor.execute(query)
 
         return await cursor.fetchone()
+
+    async def get_tokens(self, table_name: str, method: str, *args, **kwargs):
+
+        cursor = await self.retrieve_connection(kwargs)
+
+        query = f'SELECT token FROM {self._db_name}.{table_name} WHERE method="{method}"'
+
+        await cursor.execute(query)
+
+        return await cursor.fetchall()
 
     @staticmethod
     async def retrieve_connection(kwargs: dict):
@@ -140,6 +149,10 @@ class TestDB(MySQLDataBase):
     async def get_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
         return await super().get_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
 
+    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def get_tokens(self, table_name: str, method: str, *args, **kwargs):
+        return await super().get_tokens(table_name, method, *args, **kwargs)
 
 @dataclass
 class ClickHouseDataBase:

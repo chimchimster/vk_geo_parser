@@ -1,13 +1,11 @@
-import os
 import random
 import string
 import asyncio
 
-from parser import ParseData
+from parser import ParseData, statistics_manager
 from vk_geo_parser.database.database import temp_db
 from vk_geo_parser.responses.response_api import RequestAPIAttachment
-
-vk_token = os.environ.get('VK_TOKEN')
+from vk_geo_parser.telegram_logs.tg_logs import logger
 
 
 class Query:
@@ -80,12 +78,12 @@ class DataManager:
         return await temp_db.get_coordinates('vk_locations_info')
 
     async def __get_tokens(self) -> list:
-        return os.environ.get('VK_TOKEN').split(',')
+        return await temp_db.get_tokens('vk_tokens', 'photos.search')
 
     async def merge_coordinates_and_tokens(self):
         coordinates = await self.__get_coordinates()
 
-        tokens = await self.__get_tokens()
+        tokens = [token[0] for token in await self.__get_tokens()]
 
         # Since vk allows only 3 queries to its API
         delimiter = 3
@@ -131,3 +129,4 @@ async def fill():
 
 if __name__ == '__main__':
     asyncio.run(fill())
+    logger.send_message(statistics_manager.get_statistics())
