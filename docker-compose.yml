@@ -21,18 +21,42 @@ services:
       - db
     environment:
       PMA_HOST: db
-      PMA_PORT: 3306
+      PMA_PORT: "3306"
       PMA_ARBITRARY: 1
     restart: always
     ports:
-      - 8081:80
-#  parser:
-#    build:
-#      dockerfile: ./Dockerfile
-#    links:
-#      - db
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
+      - "8081:80"
+  clickhouse:
+    container_name: click_db
+    build:
+      context: .
+      dockerfile: ./clickhouse.Dockerfile
+    ports:
+      - "8123:8123"
+      - "19000:9000"
+    volumes:
+      - ch_db:/var/lib/clickhouse
+#      - .clickhouse_configs/config.xml:/etc/clickhouse-server/config.xml
+#      - .clickhouse_configs/users.xml:/etc/clickhouse-server/users.xml
+    restart: always
+    networks:
+      - clickhouse
+  tabix:
+    container_name: tabix
+    image: spoonest/clickhouse-tabix-web-client
+    ports:
+      - "8124:80"
+    depends_on:
+      - clickhouse
+    restart: always
+    networks:
+      - clickhouse
+
+
 volumes:
   dbdata:
+  ch_db:
+
+networks:
+  clickhouse:
 

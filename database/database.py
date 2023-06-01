@@ -162,10 +162,9 @@ class ClickHouseDataBase:
     def __enter__(self):
         return self
 
-    @throw_params_db_ch(host=os.environ.get('CLICK_HOUSE_HOST'), port=os.environ.get('CLICK_HOUSE_PORT'),
-                        user=os.environ.get('CLICK_HOUSE_USER'), password=os.environ.get('CLICK_HOUSE_PASSWORD'))
+    @throw_params_db_ch(host=os.environ.get('CLICK_HOUSE_HOST'), user=os.environ.get('CLICK_HOUSE_USER'))
     async def insert_into_resource_social(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
-
+        print('im here')
         cursor = kwargs.pop('cursor')
 
         await cursor.execute(
@@ -177,5 +176,5 @@ class ClickHouseDataBase:
 
 
 temp_db = TestDB('temp_db')
-temp_db_ch = ClickHouseDataBase('default')
+temp_db_ch = ClickHouseDataBase('imas')
 

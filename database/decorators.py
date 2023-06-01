@@ -16,16 +16,13 @@ def throw_params_db(host: str, user: str, password: str) -> callable:
         async def wrapper(*args, **kwargs) -> list | tuple | None:
             """ Function decorator which allows the operations in database. """
 
-            print('Connection is not succeeded!')
-            print(host, user, password)
-
             connection = await aiomysql.connect(
                 host=host,
                 user=user,
                 password=password,
                 connect_timeout=5,
             )
-            print('Connection succeed!')
+
             try:
                 result = await func(*args, connection=connection, **kwargs)
             except Error as e:
@@ -41,18 +38,16 @@ def throw_params_db(host: str, user: str, password: str) -> callable:
     return connect_db
 
 
-def throw_params_db_ch(host: str, port: int, user: str, password: str):
+def throw_params_db_ch(host: str, user: str):
     def connect_db_click_house(func):
         @wraps(func)
         async def wrapper(*args, **kwargs) -> list | tuple | None:
-
+            print('not connected', host, user)
             connection = await ch_connection(
                 host=host,
-                port=port,
                 user=user,
-                password=password,
             )
-
+            print('connected')
             try:
                 async with connection.cursor() as cursor:
                     result = await func(*args, cursor=cursor, **kwargs)
