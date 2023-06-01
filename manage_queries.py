@@ -89,11 +89,10 @@ class DataManager:
 
     async def merge_coordinates_and_tokens(self):
         coordinates = await self.__get_coordinates()
-
         tokens = [token[0] for token in await self.__get_tokens()]
 
         # Since vk allows only 3 queries to its API
-        delimiter = 3
+        delimiter = number_of_queries
 
         lst = []
         for start in range(0, len(coordinates), delimiter):
@@ -111,7 +110,9 @@ class QueryTasks:
         self._manager = manager
 
     async def apply_queries(self):
+
         queries_data = await self._manager.merge_coordinates_and_tokens()
+
         queries_objects = [Query(*data) for data in queries_data]
 
         await asyncio.gather(

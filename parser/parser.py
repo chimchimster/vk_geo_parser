@@ -10,6 +10,7 @@ from vk_geo_parser.statistics_manager.statistics import StatisticsManager
 queue = asyncio.Queue()
 statistics_manager = StatisticsManager()
 
+
 class ParseData:
     """ Class which represents main parser. """
 

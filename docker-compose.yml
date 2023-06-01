@@ -14,7 +14,6 @@ services:
       - "3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
-
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: pma
@@ -27,6 +26,13 @@ services:
     restart: always
     ports:
       - 8081:80
+#  parser:
+#    build:
+#      dockerfile: ./Dockerfile
+#    links:
+#      - db
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
 volumes:
   dbdata:
 

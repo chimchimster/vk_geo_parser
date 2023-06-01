@@ -1,3 +1,5 @@
+import asyncio
+
 import aiomysql
 from functools import wraps
 from mysql.connector import Error
@@ -14,11 +16,16 @@ def throw_params_db(host: str, user: str, password: str) -> callable:
         async def wrapper(*args, **kwargs) -> list | tuple | None:
             """ Function decorator which allows the operations in database. """
 
+            print('Connection is not succeeded!')
+            print(host, user, password)
+
             connection = await aiomysql.connect(
                 host=host,
                 user=user,
                 password=password,
+                connect_timeout=5,
             )
+            print('Connection succeed!')
             try:
                 result = await func(*args, connection=connection, **kwargs)
             except Error as e:

@@ -1,0 +1,6 @@
+aiohttp==3.8.4
+aiomysql==0.1.1
+asynch==0.2.2
+python-dotenv==1.0.0
+Requests==2.31.0
+mysql-connector-python==8.0.32

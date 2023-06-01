@@ -1,5 +1,6 @@
 db_conf.py
 .env
+test.py
 data/
 www/
 rabbitmq/
