@@ -16,6 +16,8 @@ services:
       - dbdata:/var/lib/mysql
     networks:
       - maria
+    healthcheck:
+      test: "exit 0"
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: pma
@@ -44,6 +46,8 @@ services:
     restart: always
     networks:
       - clickhouse
+    healthcheck:
+      test: "exit 0"
   tabix:
     container_name: tabix
     image: spoonest/clickhouse-tabix-web-client
@@ -55,6 +59,7 @@ services:
     networks:
       - clickhouse
   parser:
+    container_name: vk_geo_parser
     build:
       dockerfile: ./Dockerfile
     extra_hosts:
@@ -62,11 +67,32 @@ services:
     networks:
       - clickhouse
       - maria
+    depends_on:
+      clickhouse:
+        condition: service_started
+      db:
+        condition: service_started
     healthcheck:
-      test: ["CMD", "python", "manage_queries", "3"]
+      test: ["CMD", "python", "manage_queries.py", "3"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 100
+  tasker:
+    container_name: tasker
+    image: strm/tasker
+    environment:
+      configuration: |
+        schedule:
+          - every: minute
+            task: run_vk_geo
+        tasks:
+          docker:
+            - name: run_vk_geo
+              image: chimchimster/vk_geo_parser-parser
+              script:
+                - python manage_queries.py 3
+    depends_on:
+      - parser
 
 volumes:
   dbdata:
@@ -75,4 +101,3 @@ volumes:
 networks:
   clickhouse:
   maria:
-

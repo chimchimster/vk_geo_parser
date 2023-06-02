@@ -42,12 +42,12 @@ def throw_params_db_ch(host: str, user: str):
     def connect_db_click_house(func):
         @wraps(func)
         async def wrapper(*args, **kwargs) -> list | tuple | None:
-            print('not connected', host, user)
+
             connection = await ch_connection(
                 host=host,
                 user=user,
             )
-            print('connected')
+
             try:
                 async with connection.cursor() as cursor:
                     result = await func(*args, cursor=cursor, **kwargs)
