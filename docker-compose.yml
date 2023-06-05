@@ -17,7 +17,7 @@ services:
     networks:
       - parser_network
     healthcheck:
-      test: "exit 0"
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: pma
@@ -91,16 +91,20 @@ services:
           docker:
             - name: run_vk_geo
               image: chimchimster/vk_geo_parser-parser
-              networks: 
-                - parser_network
+              depends_on:
+                - db
+                - clickhouse
+              environment:
+                - MYSQL_HOST=db
+                - MYSQL_PORT=3306
+                - MYSQL_DATABASE=temp_db
+                - MYSQL_USER=${MYSQL_USER}
+                - MYSQL_PASSWORD=${MYSQL_PASSWORD}
               script:
                 - python vk_geo_parser/manage_queries.py 3
-    depends_on:
-      - db
-      - clickhouse
+              network: parser_network
     networks:
       - parser_network
-
 
 
 volumes:
@@ -109,3 +113,5 @@ volumes:
 
 networks:
   parser_network:
+    external: true
+    driver: bridge
