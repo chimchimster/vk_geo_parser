@@ -15,7 +15,7 @@ services:
     volumes:
       - dbdata:/var/lib/mysql
     networks:
-      - maria
+      - parser_network
     healthcheck:
       test: "exit 0"
   phpmyadmin:
@@ -31,7 +31,7 @@ services:
     ports:
       - "8081:80"
     networks:
-      - maria
+      - parser_network
   clickhouse:
     container_name: click_db
     build:
@@ -45,7 +45,7 @@ services:
 #      - .clickhouse_configs/users.xml:/etc/clickhouse-server/users.xml
     restart: always
     networks:
-      - clickhouse
+      - parser_network
     healthcheck:
       test: "exit 0"
   tabix:
@@ -57,29 +57,31 @@ services:
       - clickhouse
     restart: always
     networks:
-      - clickhouse
-  parser:
-    container_name: vk_geo_parser
-    build:
-      dockerfile: ./Dockerfile
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - clickhouse
-      - maria
-    depends_on:
-      clickhouse:
-        condition: service_started
-      db:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "python", "manage_queries.py", "3"]
-      interval: 30s
-      timeout: 10s
-      retries: 100
+      - parser_network
+#  parser:
+#    container_name: vk_geo_parser
+#    build:
+#      dockerfile: ./Dockerfile
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - clickhouse
+#      - maria
+#    depends_on:
+#      clickhouse:
+#        condition: service_started
+#      db:
+#        condition: service_started
+#    healthcheck:
+#      test: ["CMD", "python", "manage_queries.py", "3"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 100
   tasker:
     container_name: tasker
     image: strm/tasker
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       configuration: |
         schedule:
@@ -89,15 +91,21 @@ services:
           docker:
             - name: run_vk_geo
               image: chimchimster/vk_geo_parser-parser
+              networks: 
+                - parser_network
               script:
-                - python manage_queries.py 3
+                - python vk_geo_parser/manage_queries.py 3
     depends_on:
-      - parser
+      - db
+      - clickhouse
+    networks:
+      - parser_network
+
+
 
 volumes:
   dbdata:
   ch_db:
 
 networks:
-  clickhouse:
-  maria:
+  parser_network:
