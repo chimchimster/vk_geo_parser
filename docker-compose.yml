@@ -16,8 +16,6 @@ services:
       - dbdata:/var/lib/mysql
     networks:
       - parser_network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: pma
@@ -58,25 +56,24 @@ services:
     restart: always
     networks:
       - parser_network
-#  parser:
-#    container_name: vk_geo_parser
-#    build:
-#      dockerfile: ./Dockerfile
-#    extra_hosts:
-#      - "host.docker.internal:host-gateway"
-#    networks:
-#      - clickhouse
-#      - maria
-#    depends_on:
-#      clickhouse:
-#        condition: service_started
-#      db:
-#        condition: service_started
-#    healthcheck:
-#      test: ["CMD", "python", "manage_queries.py", "3"]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 100
+  parser:
+    container_name: vk_geo_parser
+    build:
+      dockerfile: ./Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      clickhouse:
+        condition: service_started
+      db:
+        condition: service_started
+    networks:
+      - parser_network
+    healthcheck:
+      test: [ "CMD", "python", "manage_queries.py", "3" ]
+      interval: 30s
+      timeout: 10s
+      retries: 100
   tasker:
     container_name: tasker
     image: strm/tasker
@@ -85,7 +82,7 @@ services:
     environment:
       configuration: |
         schedule:
-          - every: minute
+          - every: 18 hours
             task: run_vk_geo
         tasks:
           docker:
@@ -100,11 +97,15 @@ services:
                 - MYSQL_DATABASE=temp_db
                 - MYSQL_USER=${MYSQL_USER}
                 - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+                - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
               script:
                 - python vk_geo_parser/manage_queries.py 3
               network: parser_network
     networks:
       - parser_network
+    depends_on:
+      - clickhouse
+      - db
 
 
 volumes:
@@ -115,3 +116,4 @@ networks:
   parser_network:
     external: true
     driver: bridge
+

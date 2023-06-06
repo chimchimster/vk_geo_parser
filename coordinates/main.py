@@ -9,5 +9,8 @@ with open('cities.txt', 'r') as cities:
     for city in cities:
         c = CoordinatesCollector(city[3])
         coordinates = c.collect_coordinates()
-        with open('test_city.txt', 'a') as file:
-            file.write(','.join(city[:-1]) + ',' + coordinates[0] + '\n')
+        try:
+            with open('test_city.txt', 'a') as file:
+                file.write(','.join(city[:-1]) + ',' + coordinates[0] + '\n')
+        except:
+            ...

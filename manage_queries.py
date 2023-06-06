@@ -2,6 +2,7 @@ import random
 import string
 import asyncio
 import argparse
+import time
 
 from parser.parser import ParseData, statistics_manager
 from database.database import temp_db
@@ -130,10 +131,18 @@ async def fill():
     query_classes = {query_class_name: query_class_value for (query_class_name, query_class_value) in
                      globals().items() if query_class_name.startswith('Query_')}
 
-    await asyncio.gather(
-        *(query.fill_collection() for query in query_classes.values())
-    )
+    queue = asyncio.Queue()
+    for query_class in query_classes.values():
+        await queue.put(query_class)
 
+    for data in range(queue.qsize()):
+        result = await queue.get()
+        await asyncio.sleep(1)
+        await result.fill_collection()
+
+    # await asyncio.gather(
+    #     *(query.fill_collection() for query in query_classes.values())
+    # )
 
 if __name__ == '__main__':
     asyncio.run(fill())

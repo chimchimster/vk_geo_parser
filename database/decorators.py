@@ -15,14 +15,12 @@ def throw_params_db(host: str, user: str, password: str) -> callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> list | tuple | None:
             """ Function decorator which allows the operations in database. """
-
             connection = await aiomysql.connect(
                 host=host,
                 user=user,
                 password=password,
                 connect_timeout=5,
             )
-
             try:
                 result = await func(*args, connection=connection, **kwargs)
             except Error as e:
