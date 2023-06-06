@@ -98,6 +98,16 @@ class MySQLDataBase:
 
         return await cursor.fetchall()
 
+    async def insert_into_vk_locations_info(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
+
+        cursor = await self.retrieve_connection(kwargs)
+
+        query = f'INSERT INTO {self._db_name}.{table_name} (city_id, country_id, region_id, location_name, coordinates,' \
+                f' stability, is_work, last_update) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)'
+
+        await cursor.executemany(query, collection)
+
+
     @staticmethod
     async def retrieve_connection(kwargs: dict):
         """ Retrieves connection from kwargs.
@@ -153,6 +163,11 @@ class TestDB(MySQLDataBase):
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def get_tokens(self, table_name: str, method: str, *args, **kwargs):
         return await super().get_tokens(table_name, method, *args, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def insert_into_vk_locations_info(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
+        await super().insert_into_vk_locations_info(table_name, collection, *args, **kwargs)
 
 @dataclass
 class ClickHouseDataBase:

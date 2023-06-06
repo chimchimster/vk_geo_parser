@@ -9,9 +9,9 @@ class CoordinatesCollector:
 
     firefox_path = 'snap/bin/firefox'
 
-    def __init__(self, location, browser):
+    def __init__(self, location):
         self.location = location
-        self.browser = browser
+        self.browser = webbrowser
 
         # Initialize firefox browser
         self.browser.register('firefox', None, webbrowser.BackgroundBrowser(self.firefox_path))
@@ -23,7 +23,7 @@ class CoordinatesCollector:
         py.click(x=202, y=194)
         time.sleep(3)
 
-        py.write(self.location, interval=0.25)
+        self.__type(self.location, interval=0.25)
         time.sleep(3)
 
         py.press('enter')
@@ -43,4 +43,22 @@ class CoordinatesCollector:
         # Retrieve coordinates
         suitable = re.findall(r'\d+\.\d+\,\d+\.\d+', link_with_get_data)
 
+        print(py.position())
+        py.click(x=547, y=82)
+
         return suitable
+
+    def __paste(self, text: str):
+        pyperclip.copy(text)
+        py.hotkey('ctrl', 'v')
+
+    def __type(self, text: str, interval: float = 0.0):
+        buffer = pyperclip.paste()
+        if not interval:
+            self.__paste(text)
+        else:
+            for char in text:
+                self.__paste(char)
+                time.sleep(interval)
+
+        pyperclip.copy(buffer)
