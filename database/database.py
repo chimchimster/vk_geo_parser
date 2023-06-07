@@ -179,7 +179,7 @@ class ClickHouseDataBase:
 
     @throw_params_db_ch(host=os.environ.get('CLICK_HOUSE_HOST'), user=os.environ.get('CLICK_HOUSE_USER'))
     async def insert_into_resource_social(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
-        print('im here')
+
         cursor = kwargs.pop('cursor')
 
         await cursor.execute(

@@ -56,24 +56,24 @@ services:
     restart: always
     networks:
       - parser_network
-  parser:
-    container_name: vk_geo_parser
-    build:
-      dockerfile: ./Dockerfile
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      clickhouse:
-        condition: service_started
-      db:
-        condition: service_started
-    networks:
-      - parser_network
-    healthcheck:
-      test: [ "CMD", "python", "manage_queries.py", "3" ]
-      interval: 30s
-      timeout: 10s
-      retries: 100
+#  parser:
+#    container_name: vk_geo_parser
+#    build:
+#      dockerfile: ./Dockerfile
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    depends_on:
+#      clickhouse:
+#        condition: service_started
+#      db:
+#        condition: service_started
+#    networks:
+#      - parser_network
+#    healthcheck:
+#      test: [ "CMD", "python", "manage_queries.py", "3" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 100
   tasker:
     container_name: tasker
     image: strm/tasker
@@ -82,7 +82,7 @@ services:
     environment:
       configuration: |
         schedule:
-          - every: 18 hours
+          - every: minute
             task: run_vk_geo
         tasks:
           docker:
@@ -97,7 +97,6 @@ services:
                 - MYSQL_DATABASE=temp_db
                 - MYSQL_USER=${MYSQL_USER}
                 - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-                - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
               script:
                 - python vk_geo_parser/manage_queries.py 3
               network: parser_network
@@ -106,7 +105,6 @@ services:
     depends_on:
       - clickhouse
       - db
-
 
 volumes:
   dbdata:
