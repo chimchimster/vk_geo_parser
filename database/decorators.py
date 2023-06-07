@@ -45,7 +45,7 @@ def throw_params_db_ch(host: str, user: str):
                 host=host,
                 user=user,
             )
-
+            result = None
             try:
                 async with connection.cursor() as cursor:
                     result = await func(*args, cursor=cursor, **kwargs)

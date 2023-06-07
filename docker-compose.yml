@@ -82,7 +82,7 @@ services:
     environment:
       configuration: |
         schedule:
-          - every: minute
+          - every: 30 minutes
             task: run_vk_geo
         tasks:
           docker:

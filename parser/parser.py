@@ -65,7 +65,7 @@ class ParseData:
                            # In DB resource_social: members,
                            lst['followers_count'],
                            # In DB resource_social: info check
-                           1,
+                           6,
                            # In DB datetime_enable
                            datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                            # In DB resource_social: worker

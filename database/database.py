@@ -24,7 +24,6 @@ class MySQLDataBase:
         if len(collection) > 1:
             await cursor.executemany(query, collection)
         elif len(collection) == 1:
-            print(collection)
             await cursor.execute(query, collection[0])
 
     async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
@@ -50,7 +49,7 @@ class MySQLDataBase:
 
         cursor = await self.retrieve_connection(kwargs)
 
-        query = f'INSERT INTO {self._db_name}.{table_name} (post_id, attachment, type, owner_id, from_id, item_id, ' \
+        query = f'INSERT IGNORE INTO {self._db_name}.{table_name} (post_id, attachment, type, owner_id, from_id, item_id, ' \
                 f'status) VALUES (%s,%s,%s,%s,%s,%s,%s)'
 
         if len(collection) > 1:
@@ -102,7 +101,7 @@ class MySQLDataBase:
 
         cursor = await self.retrieve_connection(kwargs)
 
-        query = f'INSERT INTO {self._db_name}.{table_name} (city_id, country_id, region_id, location_name, coordinates,' \
+        query = f'INSERT IGNORE INTO {self._db_name}.{table_name} (city_id, country_id, region_id, location_name, coordinates,' \
                 f' stability, is_work, last_update) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)'
 
         await cursor.executemany(query, collection)

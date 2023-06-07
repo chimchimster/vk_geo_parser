@@ -1,3 +1,5 @@
+import itertools
+import sys
 import random
 import string
 import asyncio
@@ -45,7 +47,7 @@ class Query:
             """ Creates objects which will
                 decorate dynamic classes. """
 
-            return [RequestAPIAttachment(self.coordinates[i][0], 1000, 50000, self.token,
+            return [RequestAPIAttachment(self.coordinates[i][0], 1000, 6000, self.token,
                     self.coordinates[i][1], self.coordinates[i][2], self.coordinates[i][3])
                     for i in range(number)]
 
@@ -136,13 +138,32 @@ async def fill():
         await queue.put(query_class)
 
     for data in range(queue.qsize()):
+        await animate(15)
         result = await queue.get()
+
         await asyncio.sleep(1)
+
         await result.fill_collection()
 
+    # This approach could be used when you have enough VK_TOKENS... 82-83 tokens for 247 locations...
+    # While I have only one...
     # await asyncio.gather(
     #     *(query.fill_collection() for query in query_classes.values())
     # )
+
+
+async def animate(num):
+    k = 0
+    for c in itertools.cycle(['|', '/', '-', '\\']):
+        if k == num:
+            break
+        sys.stdout.write('\rparsing is in progress... ' + c)
+        sys.stdout.flush()
+        time.sleep(0.1)
+        k += 1
+    sys.stdout.flush()
+    sys.stdout.write('\rone item parsed, resuming...')
+
 
 if __name__ == '__main__':
     asyncio.run(fill())
