@@ -5,3 +5,4 @@ data/
 www/
 rabbitmq/
 vk_tokens/tokens.txt
+__pycache__/
