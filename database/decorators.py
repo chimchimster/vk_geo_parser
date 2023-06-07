@@ -29,7 +29,7 @@ def throw_params_db(host: str, user: str, password: str) -> callable:
                 await connection.commit()
                 return result
             finally:
-                connection.close()
+                await connection.ensure_closed()
 
         return wrapper
 
