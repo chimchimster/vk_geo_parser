@@ -42,6 +42,9 @@ class ParseData:
             await imas_db.insert_into_attachment('temp_attachments', collection_for_attachments)
             statistics_manager.update_statistics(temp_posts=len(collection_for_temp_posts))
             statistics_manager.update_statistics(temp_attachments=len(collection_for_attachments))
+        else:
+            statistics_manager.update_statistics(temp_posts=len(collection_for_temp_posts))
+            statistics_manager.update_statistics(temp_attachments=len(collection_for_attachments))
 
         await social_services_db.update_coordinates_last_update_field('vk_locations_info', self.coordinates)
 
