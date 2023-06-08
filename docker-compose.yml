@@ -1,61 +1,61 @@
 version: '3'
 
 services:
-  db:
-    image: mysql:5.7
-    container_name: db
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: "temp_db"
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_TCP_PORT: "3306"
-    ports:
-      - "3307:3306"
-    volumes:
-      - dbdata:/var/lib/mysql
-    networks:
-      - parser_network
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: pma
-    links:
-      - db
-    environment:
-      PMA_HOST: db
-      PMA_PORT: "3306"
-      PMA_ARBITRARY: 1
-    restart: always
-    ports:
-      - "8081:80"
-    networks:
-      - parser_network
-  clickhouse:
-    container_name: click_db
-    build:
-      context: .
-      dockerfile: ./clickhouse.Dockerfile
-    ports:
-      - "8123:8123"
-    volumes:
-      - ch_db:/var/lib/clickhouse
-#      - .clickhouse_configs/config.xml:/etc/clickhouse-server/config.xml
-#      - .clickhouse_configs/users.xml:/etc/clickhouse-server/users.xml
-    restart: always
-    networks:
-      - parser_network
-    healthcheck:
-      test: "exit 0"
-  tabix:
-    container_name: tabix
-    image: spoonest/clickhouse-tabix-web-client
-    ports:
-      - "8124:80"
-    depends_on:
-      - clickhouse
-    restart: always
-    networks:
-      - parser_network
+#  db:
+#    image: mysql:5.7
+#    container_name: db
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#      MYSQL_DATABASE: "temp_db"
+#      MYSQL_USER: ${MYSQL_USER}
+#      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#      MYSQL_TCP_PORT: "3306"
+#    ports:
+#      - "3307:3306"
+#    volumes:
+#      - dbdata:/var/lib/mysql
+#    networks:
+#      - parser_network
+#  phpmyadmin:
+#    image: phpmyadmin/phpmyadmin
+#    container_name: pma
+#    links:
+#      - db
+#    environment:
+#      PMA_HOST: db
+#      PMA_PORT: "3306"
+#      PMA_ARBITRARY: 1
+#    restart: always
+#    ports:
+#      - "8081:80"
+#    networks:
+#      - parser_network
+#  clickhouse:
+#    container_name: click_db
+#    build:
+#      context: .
+#      dockerfile: ./clickhouse.Dockerfile
+#    ports:
+#      - "8123:8123"
+#    volumes:
+#      - ch_db:/var/lib/clickhouse
+##      - .clickhouse_configs/config.xml:/etc/clickhouse-server/config.xml
+##      - .clickhouse_configs/users.xml:/etc/clickhouse-server/users.xml
+#    restart: always
+#    networks:
+#      - parser_network
+#    healthcheck:
+#      test: "exit 0"
+#  tabix:
+#    container_name: tabix
+#    image: spoonest/clickhouse-tabix-web-client
+#    ports:
+#      - "8124:80"
+#    depends_on:
+#      - clickhouse
+#    restart: always
+#    networks:
+#      - parser_network
 #  parser:
 #    container_name: vk_geo_parser
 #    build:
@@ -88,30 +88,32 @@ services:
           docker:
             - name: run_vk_geo
               image: chimchimster/vk_geo_parser-parser
-              depends_on:
-                - db
-                - clickhouse
               environment:
-                - MYSQL_HOST=db
+                - MYSQL_HOST_IMAS=${MYSQL_HOST_IMAS}
                 - MYSQL_PORT=3306
-                - MYSQL_DATABASE=temp_db
+                - MYSQL_HOST_MYSQL_HOST_SOCIAL_SERVICES=${MYSQL_HOST_SOCIAL_SERVICES}
                 - MYSQL_USER=${MYSQL_USER}
                 - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+                - CLICK_HOUSE_USER=${CLICK_HOUSE_USER}
+                - CLICK_HOUSE_PASSWORD=${CLICK_HOUSE_PASSWORD}
+                - chat_id=${chat_id}
+                - vk_token_tg=${vk_token_tg}
+                - vk_token=${vk_token}
               script:
                 - python vk_geo_parser/manage_queries.py 3
-              network: parser_network
-    networks:
-      - parser_network
-    depends_on:
-      - clickhouse
-      - db
-
-volumes:
-  dbdata:
-  ch_db:
-
-networks:
-  parser_network:
-    external: true
-    driver: bridge
+#              network: parser_network
+#    networks:
+#      - parser_network
+#    depends_on:
+#      - clickhouse
+#      - db
+#
+#volumes:
+#  dbdata:
+#  ch_db:
+#
+#networks:
+#  parser_network:
+#    external: true
+#    driver: bridge
 

@@ -1,8 +1,6 @@
-import asyncio
 import os
 
 from datetime import datetime
-from dotenv import load_dotenv
 from dataclasses import dataclass
 from vk_geo_parser.database.decorators import throw_params_db, throw_params_db_ch
 
@@ -30,7 +28,7 @@ class MySQLDataBase:
 
         cursor = await self.retrieve_connection(kwargs)
 
-        await cursor.execute(f"SELECT id FROM {self._db_name}.{table_name} WHERE s_id={s_id} AND type={_type}")
+        await cursor.execute(f'SELECT id FROM {self._db_name}.{table_name} WHERE s_id="{s_id}" AND type={_type}')
 
         res_id = await cursor.fetchone()
 
@@ -106,7 +104,6 @@ class MySQLDataBase:
 
         await cursor.executemany(query, collection)
 
-
     @staticmethod
     async def retrieve_connection(kwargs: dict):
         """ Retrieves connection from kwargs.
@@ -120,63 +117,50 @@ class MySQLDataBase:
         return cursor
 
 
-class TestDB(MySQLDataBase):
-    load_dotenv()
-
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+class ImasDB(MySQLDataBase):
+    @throw_params_db(host=os.environ.get('MYSQL_HOST_IMAS'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
         await super().insert_into_temp_posts(table_name, collection, *args, **kwargs)
 
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
-                     password=os.environ.get('MYSQL_PASSWORD'))
-    async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
-        return await super().get_res_id(table_name, s_id, *args, _type=1, **kwargs)
-
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
-                     password=os.environ.get('MYSQL_PASSWORD'))
-    async def insert_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> None:
-        await super().insert_res_id(table_name, s_id, *args, _type=1, **kwargs)
-
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+    @throw_params_db(host=os.environ.get('MYSQL_HOST_IMAS'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def insert_into_attachment(self, table_name: str, collection: list, *args, **kwargs):
         await super().insert_into_attachment(table_name, collection, *args, **kwargs)
 
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+
+class SocialServicesDB(MySQLDataBase):
+    @throw_params_db(host=os.environ.get('MYSQL_HOST_SOCIAL_SERVICES'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
+        return await super().get_res_id(table_name, s_id, *args, _type=1, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST_SOCIAL_SERVICES'), user=os.environ.get('MYSQL_USER'),
+                     password=os.environ.get('MYSQL_PASSWORD'))
+    async def insert_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> None:
+        await super().insert_res_id(table_name, s_id, *args, _type=1, **kwargs)
+
+    @throw_params_db(host=os.environ.get('MYSQL_HOST_SOCIAL_SERVICES'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def get_coordinates(self, table_name: str, _limit=3, *args, **kwargs):
         return await super().get_coordinates(table_name, _limit, *args, **kwargs)
 
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+    @throw_params_db(host=os.environ.get('MYSQL_HOST_SOCIAL_SERVICES'), user=os.environ.get('MYSQL_USER'),
                      password=os.environ.get('MYSQL_PASSWORD'))
     async def update_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
         await super().update_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
 
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
-                     password=os.environ.get('MYSQL_PASSWORD'))
-    async def get_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
-        return await super().get_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
-
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
-                     password=os.environ.get('MYSQL_PASSWORD'))
-    async def get_tokens(self, table_name: str, method: str, *args, **kwargs):
-        return await super().get_tokens(table_name, method, *args, **kwargs)
-
-    @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
-                     password=os.environ.get('MYSQL_PASSWORD'))
-    async def insert_into_vk_locations_info(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
-        await super().insert_into_vk_locations_info(table_name, collection, *args, **kwargs)
 
 @dataclass
-class ClickHouseDataBase:
+class ClickHouseDB:
 
     _db_name: str
 
     def __enter__(self):
         return self
 
-    @throw_params_db_ch(host=os.environ.get('CLICK_HOUSE_HOST'), user=os.environ.get('CLICK_HOUSE_USER'))
+    @throw_params_db_ch(host=os.environ.get('CLICK_HOUSE_HOST'), user=os.environ.get('CLICK_HOUSE_USER'),
+                        password=os.environ.get('CLICK_HOUSE_PASSWORD'))
     async def insert_into_resource_social(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
 
         cursor = kwargs.pop('cursor')
@@ -189,6 +173,54 @@ class ClickHouseDataBase:
             )
 
 
-temp_db = TestDB('temp_db')
-temp_db_ch = ClickHouseDataBase('imas')
+imas_db = ImasDB('imas')
+social_services_db = SocialServicesDB('social_services')
+imas_ch = ClickHouseDB('imas')
 
+
+# class TestDB(MySQLDataBase):
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def insert_into_temp_posts(self, table_name: str, collection: tuple, *args, **kwargs) -> None:
+#         await super().insert_into_temp_posts(table_name, collection, *args, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def get_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> int | None:
+#         return await super().get_res_id(table_name, s_id, *args, _type=1, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def insert_res_id(self, table_name: str, s_id: str, *args, _type: int = 1, **kwargs) -> None:
+#         await super().insert_res_id(table_name, s_id, *args, _type=1, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def insert_into_attachment(self, table_name: str, collection: list, *args, **kwargs):
+#         await super().insert_into_attachment(table_name, collection, *args, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def get_coordinates(self, table_name: str, _limit=3, *args, **kwargs):
+#         return await super().get_coordinates(table_name, _limit, *args, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def update_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
+#         await super().update_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def get_coordinates_last_update_field(self, table_name: str, coordinates: str, *args, **kwargs):
+#         return await super().get_coordinates_last_update_field(table_name, coordinates, *args, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def get_tokens(self, table_name: str, method: str, *args, **kwargs):
+#         return await super().get_tokens(table_name, method, *args, **kwargs)
+#
+#     @throw_params_db(host=os.environ.get('MYSQL_HOST'), user=os.environ.get('MYSQL_USER'),
+#                      password=os.environ.get('MYSQL_PASSWORD'))
+#     async def insert_into_vk_locations_info(self, table_name: str, collection: list | tuple, *args, **kwargs) -> None:
+#         await super().insert_into_vk_locations_info(table_name, collection, *args, **kwargs)

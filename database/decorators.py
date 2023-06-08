@@ -36,7 +36,7 @@ def throw_params_db(host: str, user: str, password: str) -> callable:
     return connect_db
 
 
-def throw_params_db_ch(host: str, user: str):
+def throw_params_db_ch(host: str, user: str, password: str):
     def connect_db_click_house(func):
         @wraps(func)
         async def wrapper(*args, **kwargs) -> list | tuple | None:
@@ -44,6 +44,7 @@ def throw_params_db_ch(host: str, user: str):
             connection = await ch_connection(
                 host=host,
                 user=user,
+                password=password,
             )
             result = None
             try:

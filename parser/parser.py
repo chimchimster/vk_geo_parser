@@ -1,13 +1,13 @@
 import asyncio
+import os
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
 
-from vk_geo_parser.database.database import temp_db, temp_db_ch
+from vk_geo_parser.database.database import imas_db, imas_ch, social_services_db
 from vk_geo_parser.responses.response_api import RequestAPIResource
 from vk_geo_parser.statistics_manager.statistics import StatisticsManager
 
-queue = asyncio.Queue()
 statistics_manager = StatisticsManager()
 
 
@@ -26,80 +26,33 @@ class ParseData:
         collection_for_temp_posts = []
         collection_for_attachments = []
 
-        async def send_to_resources():
-
-            async def get_all_items_from_queue():
-                async def add_item(item):
-                    items.append(item)
-
-                items = []
-
-                while not queue.empty():
-                    item = await queue.get()
-                    await add_item(item)
-
-                return items
-
-            collection_of_owners_ids_for_resources = await get_all_items_from_queue()
-            result = await RequestAPIResource(','.join(map(str, collection_of_owners_ids_for_resources)),
-                                              self.token)()
-
-            if result.get('response'):
-                result = [(await temp_db.get_res_id('resource_social_ids', lst['id']),
-                           self.country_id, self.region_id, self.city_id,
-                           # In DB resource_social: resource_name
-                           lst['first_name'] if 'first_name' in lst else '' + ' ' + lst[
-                               'last_name'] if 'last_name' in lst else '',
-                           # In DB link
-                           f'https://vk.com/id{Post.lead_link_to_unique_format(lst["id"])}',
-                           # In DB resource_social: screen name
-                           lst['screen_name'] if 'screen_name' in lst else '',
-                           # In DB resource_social: type, stability
-                           1, 0,
-                           # In DB resource_social: image profile
-                           lst['crop_photo']['photo']['sizes'][-1]['url'] if 'crop_photo' in lst else '',
-                           # In DB resource_social: s_id
-                           str(lst['id']),
-                           # In DB resource_social: start_date_imas
-                           datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                           # In DB resource_social: members,
-                           lst['followers_count'],
-                           # In DB resource_social: info check
-                           6,
-                           # In DB datetime_enable
-                           datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                           # In DB resource_social: worker
-                           4,
-                           ) for lst in result['response']]
-
-                if result:
-                    await temp_db_ch.insert_into_resource_social('resource_social', result)
-
         async def append_data(collection: list, _post):
             collection.append(_post)
 
         if response_json.get('response'):
             for data in response_json['response']['items']:
-                post = await Post(data).generate_post()
+                post = await Post(data, self.country_id, self.city_id, self.region_id, os.environ.get('vk_token')).generate_post()
 
                 if post is not None and post[0]:
                     await append_data(collection_for_temp_posts, post[0])
                     await append_data(collection_for_attachments, post[1])
 
         if collection_for_temp_posts:
-            await temp_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
-            await temp_db.insert_into_attachment('temp_attachments', collection_for_attachments)
+            await imas_db.insert_into_temp_posts('temp_posts', collection_for_temp_posts)
+            await imas_db.insert_into_attachment('temp_attachments', collection_for_attachments)
             statistics_manager.update_statistics(temp_posts=len(collection_for_temp_posts))
             statistics_manager.update_statistics(temp_attachments=len(collection_for_attachments))
-            statistics_manager.update_statistics(resource_social=queue.qsize())
 
-        await temp_db.update_coordinates_last_update_field('vk_locations_info', self.coordinates)
-        await send_to_resources()
+        await social_services_db.update_coordinates_last_update_field('vk_locations_info', self.coordinates)
 
 
 class Post:
-    def __init__(self, data) -> None:
+    def __init__(self, data, country_id, region_id, city_id, token) -> None:
         self._data = data
+        self.country_id = country_id
+        self.region_id = region_id
+        self.city_id = city_id
+        self.token = token
         self._coordinates = None
 
     async def generate_post(self) -> tuple:
@@ -113,7 +66,7 @@ class Post:
             item_id = self._data['id']
 
             # In DB temp_posts: res_id
-            res_id = await self.get_res_id(self._data)
+            res_id = await self.get_res_id(self._data, self.country_id, self.region_id, self.city_id, self.token)
 
             # In DB temp_posts: title
             title = ''
@@ -151,7 +104,7 @@ class Post:
             _type = 1
 
             # In DB temp_posts: sphinx_status
-            sphinx_status = 0
+            sphinx_status = ''
 
             # In DB temp_attachments: post_id
             post_id = self._data['id']
@@ -172,20 +125,75 @@ class Post:
     @staticmethod
     def check_if_res_id_already_in_db(func):
         @wraps(func)
-        async def wrapper(_data):
+        async def wrapper(_data, *args, **kwargs):
 
             result = await func(_data)
 
             if not result:
                 try:
                     if _data['owner_id'] > 0:
-                        await temp_db.insert_res_id('resource_social_ids', _data['owner_id'])
+                        await social_services_db.insert_res_id('resource_social_ids', _data['owner_id'])
 
-                        await queue.put(_data['owner_id'])
+                        queue = asyncio.Queue()
 
-                        await asyncio.sleep(0.001)
+                        async def send_to_resources():
 
-                        return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
+                            async def get_all_items_from_queue():
+                                async def add_item(item):
+                                    items.append(item)
+
+                                items = []
+
+                                while not queue.empty():
+                                    item = await queue.get()
+                                    await add_item(item)
+
+                                return items
+
+                            collection_of_owners_ids_for_resources = await get_all_items_from_queue()
+
+                            result = await RequestAPIResource(
+                                ','.join(map(str, collection_of_owners_ids_for_resources)),args[3]
+                            )()
+
+                            if result.get('response'):
+                                result = [(await social_services_db.get_res_id('resource_social_ids', lst['id']),
+                                           args[0], args[1], args[2],
+                                           # In DB resource_social: resource_name
+                                           lst['first_name'] if 'first_name' in lst else '' + ' ' + lst[
+                                               'last_name'] if 'last_name' in lst else '',
+                                           # In DB link
+                                           f'https://vk.com/id{Post.lead_link_to_unique_format(lst["id"])}',
+                                           # In DB resource_social: screen name
+                                           lst['screen_name'] if 'screen_name' in lst else '',
+                                           # In DB resource_social: type, stability
+                                           1, 0,
+                                           # In DB resource_social: image profile
+                                           lst['crop_photo']['photo']['sizes'][-1][
+                                               'url'] if 'crop_photo' in lst else '',
+                                           # In DB resource_social: s_id
+                                           str(lst['id']),
+                                           # In DB resource_social: start_date_imas
+                                           datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                           # In DB resource_social: members,
+                                           lst['followers_count'],
+                                           # In DB resource_social: info check
+                                           6,
+                                           # In DB datetime_enable
+                                           datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                           # In DB resource_social: worker
+                                           4,
+                                           ) for lst in result['response']]
+
+                                if result:
+                                    await imas_ch.insert_into_resource_social('resource_social', result)
+                                    statistics_manager.update_statistics(resource_social=queue.qsize())
+
+                        await send_to_resources()
+
+                        await asyncio.sleep(1)
+
+                        return await social_services_db.get_res_id('resource_social_ids', _data['owner_id'])
                 except Exception as e:
                     print(e)
             else:
@@ -195,9 +203,9 @@ class Post:
 
     @staticmethod
     @check_if_res_id_already_in_db
-    async def get_res_id(_data):
+    async def get_res_id(_data, *args):
 
-        return await temp_db.get_res_id('resource_social_ids', _data['owner_id'])
+        return await social_services_db.get_res_id('resource_social_ids', _data['owner_id'])
 
     @staticmethod
     def lead_link_to_unique_format(_owner_id) -> str:

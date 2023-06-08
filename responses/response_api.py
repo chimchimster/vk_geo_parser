@@ -2,8 +2,6 @@ import json
 import time
 import aiohttp
 
-
-
 from functools import wraps
 from dataclasses import dataclass
 from vk_geo_parser.telegram_logs.tg_logs import catch_log
@@ -27,11 +25,11 @@ class RequestAPIAttachment:
         async def wrapper(**kwargs):
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(f'https://api.vk.com/method/photos.search?'
+                    async with session.post(f'https://api.vk.com/method/photos.search?q=$20&'
                                         f'lat={str(self.coordinates).split(",")[0]}&'
                                         f'long={str(self.coordinates).split(",")[1]}&count={self.publications}&'
                                         f'v=5.131&access_token={self.token}&radius={self.radius}&'
-                                        f'start_time={int(time.time()) - 84000}&end_time={int(time.time())}') as response:
+                                        f'start_time={int(time.time()) - 1800}&end_time={int(time.time())}') as response:
 
                         # Converting response to text data
                         response_json = await response.text()
